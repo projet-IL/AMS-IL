@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contrôler YouTube Video</title>
+</head>
+<body>
+    <div id="player"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        var timeInterval;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '315',
+                width: '560',
+                videoId: 'RzVvThhjAKw',
+                playerVars: {
+                    'autoplay': 1,
+                    "mute" : 1
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        let isSyncing = false;
+
+        function onPlayerStateChange(event) {
+            if (isSyncing) return;
+            if (event.data == YT.PlayerState.PLAYING) {
+                socket.emit('play');
+                timeInterval = setInterval(function() {
+                    var currentTime = player.getCurrentTime();
+                    socket.emit('videoTime', currentTime);
+                }, 100);
+            } else if (event.data == YT.PlayerState.PAUSED) {
+                socket.emit('pause');
+                clearInterval(timeInterval);
+            }
+        }
+
+        socket.on('play', () => {
+            isSyncing = true;
+            player.playVideo();
+            setTimeout(() => isSyncing = false, 100);
+        });
+
+        socket.on('pause', () => {
+            isSyncing = true;
+            player.pauseVideo();
+            setTimeout(() => isSyncing = false, 100);
+        });
+
+        socket.on('seek', (time) => {
+            isSyncing = true;
+            player.seekTo(time);
+            setTimeout(() => isSyncing = false, 100);
+        });
+
+        socket.on('syncTime', (time) => {
+            if (Math.abs(player.getCurrentTime() - time) > 1) {
+                isSyncing = true;
+                player.seekTo(time);
+                setTimeout(() => isSyncing = false, 100);
+            }
+        });
+    </script>
+</body>
+</html>
