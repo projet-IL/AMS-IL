@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Playlist - Sara - AMS IL</title>
+    
+    <!-- Importar estilos Playlist -->
+    <link rel="stylesheet" href="src/frontend/components/playlist/Playlist.css">
+    
+    <style>
+        /* Estilos para la página de prueba */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #f8fafc;
+        }
+        
+        .test-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+        
+        .test-header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .test-header .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 5px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .test-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .playlist-demo-area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .playlist-demo-area h2 {
+            color: #f8fafc;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .playlist-demo-area h2 i {
+            font-size: 1.3rem;
+        }
+        
+        .playlist-visual {
+            height: 500px;
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+        }
+        
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .controls-panel h2 {
+            color: #f8fafc;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .control-input {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .control-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .btn-icon {
+            font-size: 1.1rem;
+        }
+        
+        .status-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .status-title {
+            color: #f59e0b;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-content {
+            color: #86efac;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .demo-footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Estilos para videos simulados en la playlist */
+        .playlist-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+        
+        .playlist-item.current {
+            background: rgba(245, 158, 11, 0.15);
+            border-left-color: #3b82f6;
+        }
+        
+        .video-thumbnail {
+            width: 80px;
+            height: 45px;
+            border-radius: 6px;
+            background: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #94a3b8;
+        }
+        
+        .video-info {
+            flex: 1;
+        }
+        
+        .video-title {
+            color: #f8fafc;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .video-meta {
+            display: flex;
+            gap: 15px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        
+        .video-duration {
+            color: #f59e0b;
+        }
+        
+        .empty-playlist {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-playlist i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Test Playlist</h1>
+    </div>
+    
+    <div class="test-container">
+        <!-- Panel izquierdo: Visualización Playlist -->
+        <div class="playlist-demo-area">
+            <h2> Playlist Visual</h2>
+            <div class="playlist-visual" id="playlistVisual">
+                <div class="empty-playlist">
+                    <i>📭</i>
+                    <p>Playlist vide</p>
+                    <p>Ajoutez des vidéos pour commencer</p>
+                </div>
+            </div>
+            
+            <div class="status-panel">
+                <div class="status-title">
+                    <i>📊</i> État de la Playlist
+                </div>
+                <div class="status-content" id="playlistStatus">
+Salon: Non initialisé
+Videos: 0
+Vidéo actuelle: Aucune
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel derecho: Controles -->
+        <div class="controls-panel">
+            <h2><i>⚙️</i> Contrôles de Test</h2>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label>Initialisation:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-primary" onclick="initPlaylistTest()">
+                            <span class="btn-icon">🚀</span>
+                            Initialiser Playlist
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>URL Vidéo YouTube:</label>
+                    <input type="text" id="videoUrlInput" class="control-input" 
+                           placeholder="https://youtube.com/watch?v=..." 
+                           value="">
+                </div>
+                
+                <div class="control-group">
+                    <label>Actions Vidéos:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-secondary" onclick="addVideoTest()">
+                            <span class="btn-icon">➕</span>
+                            Ajouter Vidéo
+                        </button>
+                        <button class="btn btn-secondary" onclick="nextVideoTest()">
+                            <span class="btn-icon">⏭️</span>
+                            Vidéo Suivante
+                        </button>
+                        <button class="btn btn-secondary" onclick="prevVideoTest()">
+                            <span class="btn-icon">⏮️</span>
+                            Vidéo Précédente
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearPlaylistTest()">
+                            <span class="btn-icon">🗑️</span>
+                            Vider Playlist
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Simulations:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-secondary" onclick="simulateMarouaVideo()">
+                            <span class="btn-icon">👤</span>
+                            Maroua ajoute
+                        </button>
+                        <button class="btn btn-secondary" onclick="simulateDamianVideo()">
+                            <span class="btn-icon">👤</span>
+                            Damian ajoute
+                        </button>
+                        <button class="btn btn-secondary" onclick="autoFillPlaylist()">
+                            <span class="btn-icon">🤖</span>
+                            Remplissage Auto
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Debug:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-secondary" onclick="showPlaylistState()">
+                            <span class="btn-icon">🐛</span>
+                            État Console
+                        </button>
+                        <button class="btn btn-secondary" onclick="testYouTubeAPI()">
+                            <span class="btn-icon">🔗</span>
+                            Test YouTube API
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Importar el componente Playlist -->
+    <script type="module">
+        import { Playlist } from './src/frontend/components/playlist/Playlist.js';
+        
+        // Variables globales
+        let playlistInstance = null;
+        const testVideos = [
+            {
+                id: 'video-1',
+                title: 'Introduction à AMS IL',
+                thumbnail: 'https://img.youtube.com/vi/abc123/default.jpg',
+                duration: '4:30',
+                addedBy: 'Sara'
+            },
+            {
+                id: 'video-2', 
+                title: 'Tutoriel Socket.IO',
+                thumbnail: 'https://img.youtube.com/vi/def456/default.jpg',
+                duration: '12:45',
+                addedBy: 'Nabil'
+            },
+            {
+                id: 'video-3',
+                title: 'Design System avec Tailwind',
+                thumbnail: 'https://img.youtube.com/vi/ghi789/default.jpg',
+                duration: '8:20',
+                addedBy: 'Maroua'
+            }
+        ];
+        
+        // ===== FUNCIONES DE TEST =====
+        
+        // 1. Inicializar playlist
+        window.initPlaylistTest = function() {
+            console.log('=== INITIALISATION PLAYLIST ===');
+            
+            playlistInstance = new Playlist('playlist-salon-' + Date.now());
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            console.log('✅ Playlist inicializada');
+            updateTestLog('Playlist inicializada');
+        };
+        
+        // 2. Añadir video
+        window.addVideoTest = function() {
+            if (!playlistInstance) {
+                alert('Initialisez d\'abord la playlist');
+                return;
+            }
+            
+            const urlInput = document.getElementById('videoUrlInput');
+            const videoUrl = urlInput.value.trim();
+            
+            if (!videoUrl) {
+                alert('Entrez une URL YouTube');
+                return;
+            }
+            
+            const video = playlistInstance.addVideo(videoUrl, 'Sara');
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            updateTestLog(`Vidéo ajoutée: "${video.title}"`);
+            urlInput.value = 'https://youtu.be/dQw4w9WgXcQ'; // Reset
+        };
+        
+        // 3. Video siguiente
+        window.nextVideoTest = function() {
+            if (!playlistInstance) return;
+            
+            const nextVideo = playlistInstance.nextVideo();
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            if (nextVideo) {
+                updateTestLog(`Passage à: "${nextVideo.title}"`);
+            }
+        };
+        
+        // 4. Video anterior
+        window.prevVideoTest = function() {
+            if (!playlistInstance) return;
+            
+            const prevVideo = playlistInstance.previousVideo();
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            if (prevVideo) {
+                updateTestLog(`Retour à: "${prevVideo.title}"`);
+            }
+        };
+        
+        // 5. Limpiar playlist
+        window.clearPlaylistTest = function() {
+            if (!playlistInstance) return;
+            
+            playlistInstance.videos = [];
+            playlistInstance.currentVideoIndex = 0;
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            updateTestLog('Playlist vidée');
+        };
+        
+        // 6. Simular otros usuarios
+        window.simulateMarouaVideo = function() {
+            if (!playlistInstance) return;
+            
+            const video = playlistInstance.addVideo(
+                'https://youtu.be/maroua-video',
+                'Maroua'
+            );
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            updateTestLog(`Maroua a ajouté: "${video.title}"`);
+        };
+        
+        window.simulateDamianVideo = function() {
+            if (!playlistInstance) return;
+            
+            const video = playlistInstance.addVideo(
+                'https://youtu.be/damian-video', 
+                'Damian'
+            );
+            updatePlaylistStatus();
+            renderPlaylistVisual();
+            
+            updateTestLog(`Damian a ajouté: "${video.title}"`);
+        };
+        
+        // 7. Rellenar automáticamente
+        window.autoFillPlaylist = function() {
+            if (!playlistInstance) return;
+            
+            updateTestLog('Remplissage automatique...');
+            
+            // Añadir videos de prueba
+            testVideos.forEach((video, index) => {
+                setTimeout(() => {
+                    playlistInstance.addVideo(
+                        `https://youtu.be/test-${video.id}`,
+                        video.addedBy
+                    );
+                    
+                    // Actualizar solo el último
+                    if (index === testVideos.length - 1) {
+                        updatePlaylistStatus();
+                        renderPlaylistVisual();
+                        updateTestLog(`${testVideos.length} vidéos ajoutées`);
+                    }
+                }, index * 300);
+            });
+        };
+        
+        // 8. Mostrar estado en consola
+        window.showPlaylistState = function() {
+            console.log('=== ÉTAT PLAYLIST ===');
+            if (playlistInstance) {
+                console.log('Instance:', playlistInstance);
+                console.log('Salon:', playlistInstance.salonId);
+                console.log('Videos:', playlistInstance.videos.length);
+                console.log('Vidéo actuelle:', playlistInstance.getCurrentVideo());
+                console.log('Index actuel:', playlistInstance.currentVideoIndex);
+            }
+            updateTestLog('État affiché dans la console (F12)');
+        };
+        
+        // 9. Test YouTube API (simulado)
+        window.testYouTubeAPI = function() {
+            updateTestLog('Test YouTube API (simulé) - À implémenter');
+            console.log('📌 Pour plus tard: intégration YouTube IFrame API');
+        };
+        
+        // ===== FUNCIONES AUXILIARES =====
+        
+        // Actualizar estado en panel
+        function updatePlaylistStatus() {
+            if (!playlistInstance) return;
+            
+            const currentVideo = playlistInstance.getCurrentVideo();
+            const statusElement = document.getElementById('playlistStatus');
+            
+            if (statusElement) {
+                statusElement.innerHTML = `
+Salon: ${playlistInstance.salonId}
+Videos: ${playlistInstance.videos.length}
+Vidéo actuelle: ${currentVideo ? `"${currentVideo.title}"` : 'Aucune'}
+Index: ${playlistInstance.currentVideoIndex + 1}/${playlistInstance.videos.length || 0}
+Ajouté par: ${currentVideo ? currentVideo.addedBy : '---'}
+                `;
+            }
+        }
+        
+        // Renderizar visualización de playlist
+        function renderPlaylistVisual() {
+            const visualElement = document.getElementById('playlistVisual');
+            if (!visualElement || !playlistInstance) return;
+            
+            if (playlistInstance.videos.length === 0) {
+                visualElement.innerHTML = `
+                    <div class="empty-playlist">
+                        <i>📭</i>
+                        <p>Playlist vide</p>
+                        <p>Ajoutez des vidéos pour commencer</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            visualElement.innerHTML = playlistInstance.videos.map((video, index) => `
+                <div class="playlist-item ${index === playlistInstance.currentVideoIndex ? 'current' : ''}">
+                    <div class="video-thumbnail">
+                        ${index === playlistInstance.currentVideoIndex ? '▶️' : '🎬'}
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-meta">
+                            <span class="video-duration">${video.duration}</span>
+                            <span>Ajouté par: ${video.addedBy}</span>
+                            <span>${video.addedAt || 'Maintenant'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Actualizar log de pruebas
+        function updateTestLog(message) {
+            console.log(`📝 ${message}`);
+            
+            // También podríamos mostrar en UI si quieres
+            const now = new Date().toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            console.log(`[${now}] ${message}`);
+        }
+        
+        // Mensaje inicial
+        console.log('=== TEST PLAYLIST - SARA ===');
+        console.log('Composant Playlist chargé avec succès');
+        updateTestLog('Prêt pour les tests');
+        
+        // Inicialización automática después de 1 segundo
+        setTimeout(() => {
+            initPlaylistTest();
+        }, 1000);
+    </script>
+</body>
+</html>

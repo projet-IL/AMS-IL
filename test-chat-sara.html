@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chat - Sara - AMS IL</title>
+    
+    <!-- Importar nuestros estilos -->
+    <link rel="stylesheet" href="src/frontend/components/chat/Chat.css">
+    
+    <style>
+        /* Estilos solo para esta página de prueba */
+        body {
+            margin: 0;
+            padding: 40px;
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .test-header h1 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #334155;
+            padding: 30px;
+            border-radius: 16px;
+        }
+        
+        .test-area {
+            height: 500px;
+            border: 2px dashed #475569;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .test-button {
+            padding: 12px 24px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .test-button:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Test Chat</h1>
+    </div>
+    
+    <div class="test-container">
+        <div class="test-area" id="chatTestArea">
+            <!-- El chat se insertará aquí -->
+        </div>
+        
+        <div class="test-controls">
+            <button class="test-button" onclick="initChatTest()">
+                1. 🚀 Inicializar Chat
+            </button>
+            <button class="test-button" onclick="addOwnMessage()">
+                2. ✍️ Mi Mensaje
+            </button>
+            <button class="test-button" onclick="addOtherMessage()">
+                3. 👤 Otro Usuario
+            </button>
+            <button class="test-button" onclick="autoConversation()">
+                4. 🤖 Auto Chat
+            </button>
+            <button class="test-button" onclick="changeUsername()">
+                5. 🔄 Cambiar Usuario
+            </button>
+            <button class="test-button" onclick="clearChat()">
+                6. 🗑️ Limpiar
+            </button>
+            <button class="test-button" onclick="checkConsole()">
+                7. 📊 Ver Consola
+            </button>
+        </div>
+    </div>
+
+    <!-- Importar nuestro componente Chat -->
+    <script type="module">
+        // Importar la clase Chat desde nuestro módulo
+        import { Chat } from './src/frontend/components/chat/Chat.js';
+        
+        // Variables globales
+        let chatInstance = null;
+        let testMessages = [
+            "Bonjour tout le monde! 👋",
+            "Comment allez-vous aujourd'hui?",
+            "Qui a des recommandations de vidéos? 🎬",
+            "J'adore cette fonctionnalité de chat!",
+            "Le projet AMS IL avance bien! 🚀"
+        ];
+        let testUsers = ['Maroua', 'Damian', 'Nabil', 'Ilhem', 'Ludovic', 'Remy'];
+        
+        // ===== FUNCIONES DE TEST =====
+        
+        // 1. Inicializar chat
+        window.initChatTest = function() {
+            console.log('=== INICIANDO TEST DEL CHAT ===');
+            
+            // Crear instancia
+            chatInstance = new Chat('test-salon-' + Date.now());
+            chatInstance.setUsername('Sara');
+            
+            // Renderizar EN el contenedor
+            const testArea = document.getElementById('chatTestArea');
+            chatInstance.render(testArea);  // ¡Importante! Pasar el contenedor
+            
+            console.log('✅ Chat inicializado');
+            console.log('📱 Interfaz renderizada');
+            updateTestStatus('Chat inicializado - Interfaz visible');
+        };
+        
+        // 2. Añadir mensaje propio
+        window.addOwnMessage = function() {
+            if (!chatInstance) {
+                alert('Primero inicializa el chat');
+                return;
+            }
+            
+            const randomMsg = testMessages[Math.floor(Math.random() * testMessages.length)];
+            chatInstance.addMessage(randomMsg);
+            updateTestStatus(`Mensaje añadido: "${randomMsg.substring(0, 30)}..."`);
+        };
+        
+        // 3. Simular mensaje de otro usuario
+        window.addOtherMessage = function() {
+            if (!chatInstance) {
+                alert('Primero inicializa el chat');
+                return;
+            }
+            
+            const randomUser = testUsers[Math.floor(Math.random() * testUsers.length)];
+            const randomMsg = testMessages[Math.floor(Math.random() * testMessages.length)];
+            
+            // Añadir como otro usuario
+            chatInstance.addMessage(randomMsg, randomUser);
+            updateTestStatus(`${randomUser} dice: "${randomMsg.substring(0, 30)}..."`);
+        };
+        
+        // 4. Cambiar usuario
+        window.changeUsername = function() {
+            if (!chatInstance) {
+                alert('Primero inicializa el chat');
+                return;
+            }
+            
+            const newUser = prompt('Nuevo nombre de usuario:', 'Sara_Modificado');
+            if (newUser) {
+                chatInstance.setUsername(newUser);
+                
+                // Actualizar interfaz si existe
+                const userInfo = document.querySelector('.user-info strong');
+                if (userInfo) {
+                    userInfo.textContent = newUser;
+                }
+                
+                updateTestStatus(`Usuario cambiado a: ${newUser}`);
+            }
+        };
+        
+        // 5. Limpiar chat
+        window.clearChat = function() {
+            if (!chatInstance) return;
+            
+            chatInstance.messages = [];
+            chatInstance.updateMessagesUI();
+            updateTestStatus('Chat limpiado - 0 mensajes');
+        };
+        
+        // 6. Ver estado en consola
+        window.checkConsole = function() {
+            console.log('=== ESTADO DEL CHAT ===');
+            if (chatInstance) {
+                console.log('Instancia:', chatInstance);
+                console.log('Salón:', chatInstance.salonId);
+                console.log('Usuario:', chatInstance.getCurrentUser());
+                console.log('Mensajes:', chatInstance.messages.length);
+                console.log('Últimos mensajes:', chatInstance.messages.slice(-3));
+            }
+            updateTestStatus('Estado mostrado en consola (F12)');
+        };
+        
+        // 7. Simular conversación automática
+        window.autoConversation = function() {
+            if (!chatInstance) {
+                alert('Primero inicializa el chat');
+                return;
+            }
+            
+            updateTestStatus('Conversación automática iniciada...');
+            
+            // Mensaje 1 (propio)
+            setTimeout(() => {
+                chatInstance.addMessage("Salut tout le monde! Je teste le chat. 🎯");
+            }, 500);
+            
+            // Mensaje 2 (Maroua)
+            setTimeout(() => {
+                chatInstance.addMessage("Super travail Sara! L'interface est magnifique! 👏", "Maroua");
+            }, 1500);
+            
+            // Mensaje 3 (propio)
+            setTimeout(() => {
+                chatInstance.addMessage("Merci Maroua! J'ai utilisé CSS Grid et Flexbox. 💻");
+            }, 2500);
+            
+            // Mensaje 4 (Damian)
+            setTimeout(() => {
+                chatInstance.addMessage("Le backend Socket.IO sera prêt demain pour l'intégration! ⚡", "Damian");
+            }, 3500);
+            
+            // Mensaje 5 (propio)
+            setTimeout(() => {
+                chatInstance.addMessage("Parfait! Je peux commencer l'intégration alors. 🚀");
+            }, 4500);
+            
+            updateTestStatus('5 mensajes automáticos programados');
+        };
+        
+        // Función auxiliar para actualizar estado en pantalla
+        function updateTestStatus(message) {
+            const statusElement = document.getElementById('testStatus');
+            if (statusElement) {
+                const time = new Date().toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                statusElement.innerHTML = `<strong>[${time}]</strong> ${message}`;
+                statusElement.scrollIntoView({ behavior: 'smooth' });
+            }
+            console.log(`📢 ${message}`);
+        }
+        
+        // Mensaje inicial
+        console.log('=== TEST CHAT - SARA ===');
+        console.log('Componente cargado correctamente');
+        console.log('Usa los botones para probar todas las funciones');
+        
+        // Crear elemento de estado si no existe
+        setTimeout(() => {
+            if (!document.getElementById('testStatus')) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'testStatus';
+                statusDiv.style.cssText = `
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: rgba(59, 130, 246, 0.1);
+                    border-radius: 8px;
+                    border-left: 4px solid #3b82f6;
+                    font-size: 0.9rem;
+                    color: #dbeafe;
+                `;
+                statusDiv.innerHTML = '<strong>Estado:</strong> Listo para pruebas';
+                document.querySelector('.test-controls').after(statusDiv);
+            }
+        }, 100);
+    </script>
+</body>
+</html>
