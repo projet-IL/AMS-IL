@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch2Gether - Design</title>
+    <style>
+        /* Thème sombre global */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* En-tête */
+        header {
+            width: 100%;
+            background-color: #2a2a2a;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* Conteneur principal : vidéo à gauche, chat à droite */
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px;
+            flex-grow: 1;
+        }
+
+        /* Section vidéo */
+        .video-section {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #player {
+            width: 100%;
+            max-width: 640px;
+            height: 360px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+
+        /* Boutons de contrôle */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Section chat (barre latérale) */
+        .chat-section {
+            flex: 1;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        #messages {
+            flex-grow: 1;
+            border: 1px solid #444;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #1a1a1a;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        #messages p {
+            margin: 5px 0;
+            color: #ccc;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+
+        /* Pied de page */
+        footer {
+            width: 100%;
+            background-color: #2a2a2a;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* Responsive pour mobile */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .chat-section {
+                border-left: none;
+                border-top: 1px solid #333;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Watch2Gether</h1>
+        <p>Regardez des vidéos ensemble</p>
+    </header>
+
+    <div class="container">
+        <div class="video-section">
+            <div id="player"></div>
+            <div class="controls">
+                <button onclick="syncPlay()">Synchroniser (Jouer)</button>
+                <button onclick="syncPause()">Synchroniser (Pause)</button>
+                <input type="text" id="videoUrl" placeholder="Collez l'URL YouTube ici" style="flex-grow: 1; margin-left: 10px;">
+                <button onclick="loadVideo()">Charger Vidéo</button>
+            </div>
+        </div>
+
+        <div class="chat-section">
+            <h3>Chat</h3>
+            <div id="messages"></div>
+            <input type="text" id="messageInput" placeholder="Tapez un message">
+            <button onclick="sendMessage()" style="margin-top: 5px;">Envoyer</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025. Inspiré de w2g.tv</p>
+    </footer>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        let messages = [];
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: 'dQw4w9WgXcQ', // Vidéo par défaut
+                events: {
+                    'onReady': onPlayerReady,
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // Lecteur prêt
+        }
+
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            const videoId = extractVideoId(url);
+            if (videoId) {
+                player.loadVideoById(videoId);
+            } else {
+                alert('URL YouTube invalide');
+            }
+        }
+
+        function extractVideoId(url) {
+            const match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            return match ? match[1] : null;
+        }
+
+        function syncPlay() {
+            player.playVideo();
+        }
+
+        function syncPause() {
+            player.pauseVideo();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const msg = input.value;
+            if (msg) {
+                messages.push('Utilisateur : ' + msg);
+                updateChat();
+                input.value = '';
+            }
+        }
+
+        function updateChat() {
+            const chatDiv = document.getElementById('messages');
+            chatDiv.innerHTML = messages.map(m => '<p>' + m + '</p>').join('');
+        }
+    </script>
+</body>
+</html>
