@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Salon {
+  id           Int           @id @default(autoincrement())
+  codeAcces    String        @unique
+  nomSalon     String
+  pinRequis    Boolean       @default(false)
+  codePIN      String?       // null si pas de PIN
+  position     Float         @default(0)
+  lecture      Boolean       @default(false)
+  vitesse      Float         @default(1)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  videoCouranteId String?   // id de la vidéo actuellement en lecture
+  
+  participants Participant[]
+  messages     Message[]
+  playlist     PlaylistItem[]
+  historique   Historique[]
+}
+
+model Participant {
+  id        Int      @id @default(autoincrement())
+  pseudo    String
+  salonId   Int
+  salon     Salon    @relation(fields: [salonId], references: [id])
+  connected Boolean  @default(true)
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  contenu   String
+  auteur    String
+  dateEnvoi DateTime @default(now())
+  salonId   Int
+  salon     Salon    @relation(fields: [salonId], references: [id])
+}
+
+model PlaylistItem {
+  id        Int      @id @default(autoincrement())
+  videoId   String
+  titre     String
+  ordre     Int
+  ajoutePar String
+  salonId   Int
+  salon     Salon    @relation(fields: [salonId], references: [id])
+}
+
+model Historique {
+  id        Int      @id @default(autoincrement())
+  videoId   String
+  titre     String
+  viewedAt  DateTime @default(now())
+  salonId   Int
+  salon     Salon    @relation(fields: [salonId], references: [id])
+}
