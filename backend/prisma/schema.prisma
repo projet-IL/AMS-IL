@@ -1,63 +1,84 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Salon {
-  id           Int           @id @default(autoincrement())
-  codeAcces    String        @unique
-  nomSalon     String
-  pinRequis    Boolean       @default(false)
-  codePIN      String?       // null si pas de PIN
-  position     Float         @default(0)
-  lecture      Boolean       @default(false)
-  vitesse      Float         @default(1)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  videoCouranteId String?   // id de la vidéo actuellement en lecture
-  
-  participants Participant[]
-  messages     Message[]
-  playlist     PlaylistItem[]
-  historique   Historique[]
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model Participant {
-  id        Int      @id @default(autoincrement())
-  pseudo    String
-  salonId   Int
-  salon     Salon    @relation(fields: [salonId], references: [id])
-  connected Boolean  @default(true)
+model Utilisateur {
+  id           Int       @id @default(autoincrement())
+  pseudo       String    @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  salonsCrees  Salon[]   @relation("SalonsCrees")
+  messages     Message[]
+  playlist     ElementPlaylist[]
+}
+
+model Salon {
+  id           Int       @id @default(autoincrement())
+  nom          String
+  code_pin     String? @map("code_pin")     //dans la base, cette colonne s’appelle code_pin
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createur_id  Int
+  createur     Utilisateur @relation("SalonsCrees", fields: [createur_id], references: [id], onDelete: Cascade)
+
+  messages     Message[]
+  playlist     ElementPlaylist[]
+  historiques  Historique[]
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  contenu   String
-  auteur    String
-  dateEnvoi DateTime @default(now())
-  salonId   Int
-  salon     Salon    @relation(fields: [salonId], references: [id])
+  id             Int       @id @default(autoincrement())
+  contenu        String
+  date_heure     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  id_utilisateur Int
+  id_salon       Int
+
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id], onDelete: Cascade)
+  salon          Salon       @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  @@index([id_salon, date_heure])
 }
 
-model PlaylistItem {
-  id        Int      @id @default(autoincrement())
-  videoId   String
-  titre     String
-  ordre     Int
-  ajoutePar String
-  salonId   Int
-  salon     Salon    @relation(fields: [salonId], references: [id])
+model ElementPlaylist {
+  id           Int       @id @default(autoincrement())
+  url_video    String
+  titre        String
+  date_ajout   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  ajoute_par   Int
+  id_salon     Int
+
+  utilisateur  Utilisateur @relation(fields: [ajoute_par], references: [id], onDelete: Cascade)
+  salon        Salon       @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  @@index([id_salon, date_ajout])
 }
 
 model Historique {
-  id        Int      @id @default(autoincrement())
-  videoId   String
-  titre     String
-  viewedAt  DateTime @default(now())
-  salonId   Int
-  salon     Salon    @relation(fields: [salonId], references: [id])
+  id               Int       @id @default(autoincrement())
+  url_video        String
+  date_visionnage  DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  id_salon         Int
+  salon            Salon     @relation(fields: [id_salon], references: [id], onDelete: Cascade)
 }
