@@ -59,6 +59,11 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log("Un utilisateur s'est déconnecté");
     });
+
+    socket.on('changeVideo', (videoId) => {
+        console.log('Changement de vidéo demandé :', videoId);
+        io.emit('changeVideo', videoId);
+    });
 });
 
 const PORT = process.env.PORT || 3000;
