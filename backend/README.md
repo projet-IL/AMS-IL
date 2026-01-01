@@ -25,29 +25,29 @@ Les données (pseudos, messages, playlist) sont éphémères et liées à la dur
 
 
 Structure de la base de données (résumé):
--Utilisateur
+-Utilisateur :
     - id
     - pseudo
     - createdAt / updatedAt
--Salon
+-Salon :
     - id
     - nom
     - code_pin (optionnel)
     - createur_id
--Message
+-Message :
     - id
     - contenu
     - id_utilisateur
     - id_salon
     - date_heure
--ElementPlaylist
+-ElementPlaylist :
     - id
     - url_video
     - titre
     - ajoute_par
     - id_salon
     - date_ajout
--Historique
+-Historique :
     - id
     - url_video
     - id_salon
