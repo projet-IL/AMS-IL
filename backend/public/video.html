@@ -162,9 +162,12 @@
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
   <script>
-    // ✅ Récup params URL: ?code=xxxx
+    // Récup params URL: ?code=xxxx
     const params = new URLSearchParams(window.location.search);
     const codeAcces = params.get("code");
+
+    // API + Socket sur le même serveur que la page
+    const API_BASE = window.location.origin;
 
     const blocker = document.getElementById("blocker");
     const playlistSidebar = document.getElementById("playlistSidebar");
@@ -227,12 +230,12 @@
       throw new Error("Missing codeAcces in URL");
     }
 
-    // ✅ On évite ?userId= dans l’URL : sessionStorage par salon
+    //  On évite ?userId= dans l’URL : sessionStorage par salon
     const STORAGE_KEY = `wt_userId_${codeAcces}`;
     let userId = Number(sessionStorage.getItem(STORAGE_KEY)) || null;
 
-    // ✅ Local (plus tard: URL prod/pedago)
-    const socket = io("http://localhost:4000", { transports: ["websocket", "polling"] });
+    // socket (local ou pedago)
+    const socket = io(API_BASE, { transports: ["websocket", "polling"] });
     
     // recevoir message temps réel
     socket.on("chatMessageCreated", (msg) => {
@@ -240,7 +243,7 @@
       appendChatMessage(msg);
     });
 
-    // ✅ YouTube API
+    //  YouTube API
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -261,7 +264,7 @@
       if (salonId) return salonId;
 
       try {
-        const resp = await fetch(`http://localhost:4000/api/salons/${encodeURIComponent(codeAcces)}`);
+        const resp = await fetch(`${API_BASE}/api/salons/${encodeURIComponent(codeAcces)}`);
         const salon = await resp.json();
 
         if (!resp.ok) return null;
@@ -301,7 +304,7 @@
             joinSubmit.disabled = true;
             joinSubmit.textContent = "Connexion...";
 
-            const resp = await fetch(`http://localhost:4000/api/salons/${encodeURIComponent(codeAcces)}/join`, {
+            const resp = await fetch(`${API_BASE}/api/salons/${encodeURIComponent(codeAcces)}/join`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ pseudo, code_pin })
@@ -611,7 +614,7 @@
       if (!salonId) return;
 
       try {
-        const resp = await fetch(`http://localhost:4000/api/historique?salonId=${salonId}`);
+        const resp = await fetch(`${API_BASE}/api/historique?salonId=${salonId}`);
         const entries = await resp.json();
 
         const top = (entries || []).slice(0, 8);
@@ -636,7 +639,7 @@
     async function refreshChat() {
       if (!salonId) return;
       try {
-        const resp = await fetch(`http://localhost:4000/api/messages?salonId=${salonId}`);
+        const resp = await fetch(`${API_BASE}/api/messages?salonId=${salonId}`);
         const msgs = await resp.json();
         chatMessages.innerHTML = "";
         (msgs || []).slice(-50).forEach(appendChatMessage);
