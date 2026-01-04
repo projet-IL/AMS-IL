@@ -1,0 +1,76 @@
+npm install express
+
+Initialisation node :
+npm init -y
+
+installation : 
+npm install express cors dotenv @prisma/client
+npm install -D prisma nodemon
+
+package.json avec :
+
+dependencies : express, cors, dotenv, @prisma/client
+devDependencies : prisma, nodemon
+
+Creation du dossier prisma/ avec fichier schema.prisma
+modèles Salon, Participant
+
+
+
+Serveur express :
+Fichier src/app.js avec :
+
+chargement des variables d’env - dotenv
+
+creation de l’app express
+
+middlewares cors et express.json()
+
+route /api/...
+
+lancement du serveur sur PORT (par défaut 3000).
+
+
+
+
+
+
+cd ~/L3/il/backend
+
+
+npm run dev
+
+Lister salon
+curl http://localhost:3000/api/salons
+
+Crée salon
+curl -X POST http://localhost:3000/api/salons \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nomSalon": "test",
+    "pinRequis": true,
+    "codePIN": "1234"
+  }'
+
+
+Recup salon par code 
+curl http://localhost:3000/api/salons/code
+
+
+Rejoindre salon avec pin 
+curl -X POST http://localhost:3000/api/salons/tgq0l88/join \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pseudo": "Damian",
+    "codePIN": "1234"
+  }'
+
+
+
+Quitter salon 
+curl -X POST http://localhost:3000/api/salons/tgq0l88/leave \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pseudo": "Damian"
+  }'
+

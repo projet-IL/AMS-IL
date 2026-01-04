@@ -1,0 +1,15 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environnement
+.env
+
+# Prisma
+prisma/dev.db
+prisma/*.db-journal
+
+# Autres trucs à ne pas commiter
+.DS_Store
+

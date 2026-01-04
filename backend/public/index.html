@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>WatchTogether – Accueil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-cover bg-center bg-no-repeat"
+      style="background-image:url('./photo/beb6c872b60ace90a04e0be056894a78.jpg');">
+
+  <!-- Overlay -->
+  <div class="min-h-screen bg-black/60 flex flex-col">
+
+    <!-- Navbar (clean) -->
+    <header class="flex justify-between items-center px-10 py-6 text-white">
+      <div class="text-xl font-bold">WatchTogether</div>
+      <nav class="flex gap-6 text-sm text-gray-300">
+        <span class="opacity-70">Aucun compte requis</span>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <main class="flex-1 flex items-center justify-center px-4">
+      <div class="bg-slate-900/70 backdrop-blur-md rounded-3xl p-10 text-center text-white w-[480px]">
+        <h1 class="text-3xl font-semibold mb-2">BIENVENUE.</h1>
+        <p class="text-sm text-gray-300 mb-8">Crée ou rejoins un salon en quelques secondes.</p>
+
+        <!-- CREATE -->
+        <button id="btnOpenCreate"
+           class="w-full block bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-300 transition">
+          Créer un salon
+        </button>
+
+        <!-- JOIN -->
+        <div class="mt-6 text-left">
+          <label class="block text-sm text-gray-300 mb-2">Rejoindre un salon</label>
+          <div class="flex gap-2">
+            <input id="joinCode" type="text" placeholder="Code d’accès (ex: a1b2c3...)"
+              class="flex-1 bg-slate-950/70 rounded-xl px-4 py-3 text-sm outline-none border border-slate-700 focus:border-yellow-400"
+            />
+            <button id="btnJoin"
+              class="bg-slate-200 text-black font-semibold px-4 rounded-xl hover:bg-white transition">
+              Rejoindre
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-2">
+            Le pseudo et le PIN seront demandés à l’entrée du salon.
+          </p>
+        </div>
+
+        <!-- Platforms -->
+        <div class="flex justify-center gap-4 mt-8 text-gray-300">
+          <span>▶</span>
+          <span>🎵</span>
+          <span>🎬</span>
+          <span>📺</span>
+        </div>
+
+        <div id="status" class="mt-4 text-xs text-gray-300"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ✅ MODAL CREATE (pas de prompt) -->
+  <div id="createModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50 p-4">
+    <div class="w-full max-w-md bg-slate-900 text-white rounded-2xl border border-slate-700 shadow-xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <h2 class="font-semibold text-lg">Créer un salon</h2>
+        <button id="closeCreate" class="text-gray-300 hover:text-white">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-sm text-gray-300 mb-2">Nom du salon</label>
+          <input id="createNom" type="text" placeholder=""
+            class="w-full bg-slate-950/70 rounded-xl px-4 py-3 text-sm outline-none border border-slate-700 focus:border-yellow-400" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-300 mb-2">pseudo (hôte)</label>
+          <input id="createPseudo" type="text" placeholder=""
+            class="w-full bg-slate-950/70 rounded-xl px-4 py-3 text-sm outline-none border border-slate-700 focus:border-yellow-400" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-300 mb-2">PIN </label>
+          <input id="createPin" type="text" placeholder=""
+            class="w-full bg-slate-950/70 rounded-xl px-4 py-3 text-sm outline-none border border-slate-700 focus:border-yellow-400" />
+        </div>
+
+        <div id="createError" class="text-xs text-red-300"></div>
+
+        <button id="btnCreate"
+          class="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-300 transition">
+          Créer et entrer
+        </button>
+
+        <p class="text-xs text-gray-400">
+          Le code d’accès sera généré automatiquement.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const joinCode = document.getElementById("joinCode");
+    const btnJoin = document.getElementById("btnJoin");
+
+    const btnOpenCreate = document.getElementById("btnOpenCreate");
+    const createModal = document.getElementById("createModal");
+    const closeCreate = document.getElementById("closeCreate");
+
+    const createNom = document.getElementById("createNom");
+    const createPseudo = document.getElementById("createPseudo");
+    const createPin = document.getElementById("createPin");
+    const createError = document.getElementById("createError");
+    const btnCreate = document.getElementById("btnCreate");
+
+    function setStatus(msg) { statusEl.textContent = msg || ""; }
+    function setCreateError(msg) { createError.textContent = msg || ""; }
+
+    function openCreate() {
+      setCreateError("");
+      createModal.classList.remove("hidden");
+      createModal.classList.add("flex");
+      setTimeout(() => createNom.focus(), 50);
+    }
+    function closeCreateModal() {
+      createModal.classList.add("hidden");
+      createModal.classList.remove("flex");
+    }
+
+    btnOpenCreate.addEventListener("click", openCreate);
+    closeCreate.addEventListener("click", closeCreateModal);
+    createModal.addEventListener("click", (e) => {
+      if (e.target === createModal) closeCreateModal();
+    });
+
+    // JOIN
+    btnJoin.addEventListener("click", () => {
+      const code = (joinCode.value || "").trim();
+      if (!code) {
+        setStatus("⚠️ Entre un code d’accès.");
+        return;
+      }
+      setStatus("");
+      window.location.href = `./video.html?code=${encodeURIComponent(code)}`;
+    });
+
+    joinCode.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnJoin.click();
+    });
+
+    // CREATE (API)
+    btnCreate.addEventListener("click", async () => {
+      try {
+        setCreateError("");
+
+        const nom = (createNom.value || "").trim() || "Salon";
+        const pseudo = (createPseudo.value || "").trim();
+        const code_pin = (createPin.value || "").trim();
+
+        if (!pseudo) {
+          setCreateError("❌ Pseudo requis.");
+          return;
+        }
+
+        btnCreate.disabled = true;
+        btnCreate.textContent = "Création...";
+
+        const resp = await fetch("http://localhost:4000/api/salons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nom, pseudo, code_pin: code_pin || null })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          setCreateError("❌ " + (data?.error || "Erreur création salon"));
+          btnCreate.disabled = false;
+          btnCreate.textContent = "Créer et entrer";
+          return;
+        }
+
+        const codeAcces = data?.salon?.code_acces;
+        const userId = data?.utilisateur?.id;
+
+        if (!codeAcces || !userId) {
+          setCreateError("❌ Réponse invalide (code/userId manquant).");
+          btnCreate.disabled = false;
+          btnCreate.textContent = "Créer et entrer";
+          return;
+        }
+
+        // ✅ Stocke le userId pour que video.html ne redemande pas au host
+        sessionStorage.setItem(`wt_userId_${codeAcces}`, String(userId));
+
+        closeCreateModal();
+        setStatus("✅ Salon créé. Redirection...");
+        window.location.href = `./video.html?code=${encodeURIComponent(codeAcces)}`;
+
+      } catch (e) {
+        console.error(e);
+        setCreateError("❌ Erreur réseau (serveur éteint ?).");
+      } finally {
+        btnCreate.disabled = false;
+        btnCreate.textContent = "Créer et entrer";
+      }
+    });
+  </script>
+</body>
+</html>
