@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Salon {
+  id          Int       @id @default(autoincrement())
+  nom         String
+  code_acces  String    @unique
+  code_pin    String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  utilisateurs Utilisateur[]
+  messages     Message[]
+  playlist     ElementPlaylist[]
+  historiques  Historique[]
+
+  @@index([code_acces])
+}
+
+model Utilisateur {
+  id        Int      @id @default(autoincrement())
+  pseudo    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  id_salon  Int
+  salon     Salon    @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  messages  Message[]
+  playlist  ElementPlaylist[]
+
+  @@index([id_salon])
+}
+
+model Message {
+  id            Int       @id @default(autoincrement())
+  contenu       String
+  date_heure    DateTime  @default(now())
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  id_utilisateur Int
+  id_salon       Int
+
+  utilisateur   Utilisateur @relation(fields: [id_utilisateur], references: [id], onDelete: Cascade)
+  salon         Salon       @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  @@index([id_salon, date_heure])
+}
+
+model ElementPlaylist {
+  id         Int      @id @default(autoincrement())
+  url_video  String
+  titre      String
+  date_ajout DateTime @default(now())
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  ajoute_par Int
+  id_salon   Int
+
+  utilisateur Utilisateur @relation(fields: [ajoute_par], references: [id], onDelete: Cascade)
+  salon       Salon       @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  @@index([id_salon, date_ajout])
+}
+
+model Historique {
+  id              Int      @id @default(autoincrement())
+  url_video       String
+  date_visionnage DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  id_salon        Int
+  salon           Salon    @relation(fields: [id_salon], references: [id], onDelete: Cascade)
+
+  @@index([id_salon, date_visionnage])
+}
