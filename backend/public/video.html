@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: black; overflow: hidden; }
+    #player { width: calc(100% - 380px); height: 100%; }
+
+    #blocker {
+      position: fixed; inset: 0;
+      display: none;
+      align-items: center; justify-content: center;
+      background: black; color: white;
+      font-family: Arial, sans-serif;
+      padding: 24px;
+      text-align: center;
+      z-index: 99999;
+    }
+
+    /* ✅ Sidebar playlist */
+    #playlistSidebar {
+      position: fixed;
+      top: 0; right: 0;
+      width: 380px;
+      height: 100%;
+      background: #0b1220;
+      border-left: 1px solid rgba(255,255,255,0.08);
+      overflow: auto;
+      z-index: 9999;
+      display: none;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    #participantsBox{
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      background: rgba(255,255,255,0.06);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    #playlistMount{
+      margin-bottom: 10px;
+    }
+
+    #historyBox{
+      margin-top: 12px;
+      max-height: 220px;
+      overflow: auto;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      display: none;
+    }
+    #historyBox a { color: #9ecbff; text-decoration: none; }
+    #historyBox a:hover { text-decoration: underline; }
+
+  </style>
+
+  <!-- css playlist -->
+  <link rel="stylesheet" href="/src/frontend/components/playlist/Playlist.css">
+</head>
+
+<body style="margin:0; background:black; overflow:hidden;">
+  <div id="blocker"></div>
+  <div id="player"></div>
+
+  <!-- fond au début -->
+  <div id="noVideoOverlay" style="
+    position:fixed; left:0; top:0;
+    width:calc(100% - 380px); height:100%;
+    display:none;
+    align-items:center; justify-content:center;
+    color:white; font-family:Arial; font-size:18px;
+    background:black; z-index:5000;
+    text-align:center; padding:20px;
+  ">
+    Aucune vidéo en cours — ajoute une vidéo à la playlist.
+  </div>
+  
+  <!-- MODAL JOIN  -->
+  <div id="joinModal" style="
+    position:fixed; inset:0;
+    display:none; align-items:center; justify-content:center;
+    background: rgba(0,0,0,0.6);
+    z-index: 999999;
+    font-family: Arial, sans-serif;
+  ">
+    <div style="
+      width: 420px; max-width: calc(100% - 24px);
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 16px;
+      color: white;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    ">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px;">
+        <b style="font-size:16px;">Rejoindre le salon</b>
+        <button id="joinClose" style="
+          background: transparent; border: 0; color: rgba(255,255,255,0.7);
+          cursor: pointer; font-size: 18px;
+        ">✕</button>
+      </div>
+
+      <div style="font-size:12px; opacity:.7; margin-bottom: 12px;">
+        Code : <span id="joinCodeLabel"></span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div>
+          <div style="font-size:12px; opacity:.8; margin-bottom:6px;">Choisissez un pseudo</div>
+          <input id="joinPseudo" placeholder="" style="
+            width:100%; padding:10px 12px; border-radius:12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.25); color:white; outline:none;
+          ">
+        </div>
+
+        <div>
+          <div style="font-size:12px; opacity:.8; margin-bottom:6px;">PIN </div>
+          <input id="joinPin" placeholder="" style="
+            width:100%; padding:10px 12px; border-radius:12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.25); color:white; outline:none;
+          ">
+        </div>
+
+        <div id="joinError" style="font-size:12px; color:#ffb4b4;"></div>
+
+        <button id="joinSubmit" style="
+          width:100%; padding:10px 12px; border-radius:12px;
+          border:0; cursor:pointer;
+          background:#facc15; color:black; font-weight:700;
+        ">Entrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Playlist UI -->
+  <div id="playlistSidebar">
+    <div id="participantsBox"></div>
+    <div id="playlistMount"></div>
+    <div id="chatBox" style="margin-top:12px; background:rgba(255,255,255,0.06); border-radius:10px; padding:10px; color:white; font-family:Arial;">
+      <b>Chat</b>
+      <div id="chatMessages" style="margin-top:8px; max-height:220px; overflow:auto; font-size:12px;"></div>
+
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <input id="chatInput" placeholder="Écrire un message..." style="flex:1; padding:8px; border-radius:8px; border:0; outline:none;">
+        <button id="chatSend" style="padding:8px 10px; border-radius:8px; border:0; cursor:pointer;">Envoyer</button>
+      </div>
+    </div>  
+    <div id="historyBox"></div>
+  </div>
+
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <script>
+    // ✅ Récup params URL: ?code=xxxx
+    const params = new URLSearchParams(window.location.search);
+    const codeAcces = params.get("code");
+
+    const blocker = document.getElementById("blocker");
+    const playlistSidebar = document.getElementById("playlistSidebar");
+    const participantsBox = document.getElementById("participantsBox");
+    const historyBox = document.getElementById("historyBox");
+    const noVideoOverlay = document.getElementById("noVideoOverlay");
+    const joinModal = document.getElementById("joinModal");
+    const joinClose = document.getElementById("joinClose");
+    const joinCodeLabel = document.getElementById("joinCodeLabel");
+    const joinPseudo = document.getElementById("joinPseudo");
+    const joinPin = document.getElementById("joinPin");
+    const joinError = document.getElementById("joinError");
+    const joinSubmit = document.getElementById("joinSubmit"); 
+
+    let salonId = null;
+
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const chatSend = document.getElementById("chatSend");
+
+    function appendChatMessage(msg) {
+      const pseudo = msg?.pseudo || msg?.utilisateur?.pseudo || `user#${msg?.id_utilisateur ?? "?"}`;
+      const contenu = msg?.contenu ?? "";
+      const line = document.createElement("div");
+      line.style.marginBottom = "6px";
+
+      const b = document.createElement("b");
+      b.textContent = pseudo;
+      const span = document.createElement("span");
+      span.textContent = ` : ${contenu}`;
+      line.appendChild(b);
+      line.appendChild(span);
+
+      chatMessages.appendChild(line);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendChat() {
+      const contenu = (chatInput.value || "").trim();
+      if (!contenu) return;
+
+      socket.emit("chatMessage", { codeAcces, userId, contenu });
+      chatInput.value = "";
+    }
+
+    if (chatSend) chatSend.addEventListener("click", sendChat);
+    if (chatInput) chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendChat();
+    });
+
+
+    function blockAccess(message) {
+      blocker.style.display = "flex";
+      blocker.textContent = message || "Accès refusé.";
+      try { if (player && typeof player.stopVideo === "function") player.stopVideo(); } catch {}
+    }
+
+    if (!codeAcces) {
+      blockAccess("Salon introuvable : il manque ?code=...");
+      throw new Error("Missing codeAcces in URL");
+    }
+
+    // ✅ On évite ?userId= dans l’URL : sessionStorage par salon
+    const STORAGE_KEY = `wt_userId_${codeAcces}`;
+    let userId = Number(sessionStorage.getItem(STORAGE_KEY)) || null;
+
+    // ✅ Local (plus tard: URL prod/pedago)
+    const socket = io("http://localhost:4000", { transports: ["websocket", "polling"] });
+    
+    // recevoir message temps réel
+    socket.on("chatMessageCreated", (msg) => {
+      // si tu veux filtrer par salon, faudrait inclure codeAcces dans l'emit backend
+      appendChatMessage(msg);
+    });
+
+    // ✅ YouTube API
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    var player;
+
+    let pulseInterval = null;
+    let isSyncing = false;
+    let joined = false;
+
+    let lastState = null;
+    let lastSyncSentAt = 0;
+    let pendingSyncTimeout = null;
+    let isScrubbing = false;
+
+    async function ensureSalonId() {
+      if (salonId) return salonId;
+
+      try {
+        const resp = await fetch(`http://localhost:4000/api/salons/${encodeURIComponent(codeAcces)}`);
+        const salon = await resp.json();
+
+        if (!resp.ok) return null;
+
+        salonId = salon?.id || null;
+        return salonId;
+      } catch (e) {
+        console.error("ensureSalonId error:", e);
+        return null;
+      }
+    }
+
+    // Assure un userId (join API si besoin)
+    async function ensureUserId() {
+      // même si on a déjà userId , on récupère salonId pour l'historique/chat
+      if (userId) {
+        await ensureSalonId();
+        return userId;
+      }
+
+      // afficher modal et attendre submit
+      openJoinModal();
+
+      return await new Promise((resolve, reject) => {
+        async function doJoin() {
+          try {
+            joinError.textContent = "";
+
+            let pseudo = (joinPseudo.value || "").trim();
+            const code_pin = (joinPin.value || "").trim();
+
+            if (!pseudo) {
+              joinError.textContent = "❌ Pseudo requis.";
+              return;
+            }
+
+            joinSubmit.disabled = true;
+            joinSubmit.textContent = "Connexion...";
+
+            const resp = await fetch(`http://localhost:4000/api/salons/${encodeURIComponent(codeAcces)}/join`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pseudo, code_pin })
+            });
+
+            const data = await resp.json();
+
+            salonId =
+              data?.salon?.id ||
+              data?.salonId ||
+              data?.utilisateur?.id_salon ||
+              null;
+
+            if (!resp.ok) {
+              joinError.textContent = "❌ " + (data?.error || "Erreur");
+              joinSubmit.disabled = false;
+              joinSubmit.textContent = "Entrer";
+              return;
+            }
+
+            const newUserId = data?.utilisateur?.id;
+            if (!newUserId) {
+              joinError.textContent = "❌ Join OK mais userId manquant.";
+              joinSubmit.disabled = false;
+              joinSubmit.textContent = "Entrer";
+              return;
+            }
+
+            userId = Number(newUserId);
+            sessionStorage.setItem(STORAGE_KEY, String(userId));
+
+            closeJoinModal();
+            resolve(userId);
+          } catch (e) {
+            console.error(e);
+            joinError.textContent = "❌ Erreur réseau.";
+            joinSubmit.disabled = false;
+            joinSubmit.textContent = "Entrer";
+          }
+        }
+
+        joinSubmit.onclick = doJoin;
+
+        joinPseudo.onkeydown = (e) => {
+          if (e.key === "Enter") doJoin();
+        };
+
+        joinPin.onkeydown = (e) => {
+          if (e.key === "Enter") doJoin();
+        };
+
+      });
+    }
+
+
+    // ✅ 2) Join socket seulement après userId valide
+    socket.on("connect", async () => {
+      console.log("socket connected", socket.id);
+      try {
+        await ensureUserId();
+        socket.emit("joinRoom", { codeAcces, userId });
+      } catch (e) {
+        console.log("ensureUserId error:", e);
+      }
+    });
+
+    socket.on("errorMessage", ({ error }) => {
+      console.log("errorMessage:", error);
+      blockAccess("Accès refusé : " + (error || "Erreur"));
+    });
+
+    socket.on("joinedRoom", () => {
+      joined = true;
+
+      // affiche la playlist seulement une fois joined
+      playlistSidebar.style.display = "block";
+
+      if (player && typeof player.playVideo === "function") {
+        player.pauseVideo();
+      }
+      historyBox.style.display = "block";
+      refreshHistory();
+      refreshChat();
+    });
+
+    socket.on("participantsOnline", ({ online }) => {
+      online = online || [];
+      participantsBox.innerHTML = `
+        <b>Connectés (${online.length})</b><br>
+        ${online.length === 0 ? "<i>Personne</i>" : online.map(u => `• ${u.pseudo}`).join("<br>")}
+      `;
+    });
+
+    function sendSyncActionDebounced() {
+      if (!player) return;
+
+      const now = Date.now();
+      const delay = 300;
+
+      const payload = {
+        codeAcces,
+        videoTime: player.getCurrentTime(),
+        clockTime: Date.now(),
+        playbackRate: player.getPlaybackRate()
+      };
+
+      if (now - lastSyncSentAt > delay) {
+        lastSyncSentAt = now;
+        socket.emit("syncAction", payload);
+      } else {
+        clearTimeout(pendingSyncTimeout);
+        pendingSyncTimeout = setTimeout(() => {
+          lastSyncSentAt = Date.now();
+          socket.emit("syncAction", payload);
+        }, delay);
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") isScrubbing = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        isScrubbing = false;
+
+        if (player && joined) {
+          const payload = {
+            codeAcces,
+            videoTime: player.getCurrentTime(),
+            clockTime: Date.now(),
+            playbackRate: player.getPlaybackRate()
+          };
+          socket.emit("syncAction", payload);
+          setTimeout(() => socket.emit("syncAction", payload), 120);
+          setTimeout(() => socket.emit("syncAction", payload), 240);
+        }
+      }
+    });
+
+    function startPulse() {
+      clearInterval(pulseInterval);
+      pulseInterval = setInterval(() => {
+        if (!player || !joined) return;
+        socket.emit("videoTime", {
+          codeAcces,
+          videoTime: player.getCurrentTime(),
+          clockTime: Date.now(),
+          playbackRate: player.getPlaybackRate()
+        });
+      }, 5000);
+    }
+
+    function stopPulse() {
+      clearInterval(pulseInterval);
+      pulseInterval = null;
+    }
+
+    // ✅ IMPORTANT : autoplay: 0
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: 'RzVvThhjAKw',
+        playerVars: { autoplay: 0, mute: 1 },
+        events: {
+          onStateChange: onPlayerStateChange,
+          onPlaybackRateChange: onPlaybackRateChange,
+          onReady: () => { try { player.pauseVideo(); } catch {} }
+        }
+      });
+    }
+
+    function onPlaybackRateChange(event) {
+      if (!joined) return;
+      if (isSyncing) return;
+
+      const newSpeed = event.data;
+      socket.emit("changeSpeed", { codeAcces, speed: newSpeed });
+      sendSyncActionDebounced();
+    }
+
+    function onPlayerStateChange(event) {
+      if (!joined) return;
+      if (isSyncing) return;
+
+      if (event.data === lastState) return;
+      lastState = event.data;
+
+      if (event.data === YT.PlayerState.PLAYING) {
+        socket.emit("play", { codeAcces });
+        sendSyncActionDebounced();
+        startPulse();
+      }
+      else if (event.data === YT.PlayerState.PAUSED) {
+        socket.emit("pause", { codeAcces });
+        stopPulse();
+      }
+    }
+
+    //  Sync initial (avec support videoId)
+    socket.on("initialSync", (data) => {
+      const checkReady = setInterval(() => {
+        if (player && typeof player.seekTo === "function") {
+          clearInterval(checkReady);
+          if (!joined) return;
+
+          //  Si aucune vidéo définie côté serveur -> overlay + pause
+          if (!data.videoId) {
+            noVideoOverlay.style.display = "flex";
+            try { player.pauseVideo(); } catch {}
+            return;
+          } else {
+            noVideoOverlay.style.display = "none";
+          }
+
+          //  si backend envoie videoId : charger la bonne vidéo
+          if (data.videoId) {
+            try {
+              const current = player.getVideoData()?.video_id;
+              if (current !== data.videoId) {
+                isSyncing = true;
+                player.loadVideoById(data.videoId);
+              }
+            } catch {}
+          }
+
+          // petit délai pour laisser loadVideoById se faire
+          setTimeout(() => {
+            let targetTime = data.videoTime || 0;
+            if (data.isPlaying) {
+              const elapsedSinceUpdate = (Date.now() - data.clockTime) / 1000;
+              targetTime += (elapsedSinceUpdate * (data.playbackRate || 1));
+            }
+
+            isSyncing = true;
+            player.setPlaybackRate(data.playbackRate || 1);
+            player.seekTo(targetTime, true);
+
+            if (data.isPlaying) player.playVideo();
+            else player.pauseVideo();
+
+            setTimeout(() => isSyncing = false, 1000);
+          }, data.videoId ? 700 : 0);
+        }
+      }, 200);
+    });
+
+    socket.on("changeSpeed", (speed) => {
+      if (!player || !joined) return;
+      isSyncing = true;
+      player.setPlaybackRate(speed);
+      setTimeout(() => isSyncing = false, 400);
+    });
+
+    socket.on("play", () => {
+      if (!player || !joined) return;
+      if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+        isSyncing = true;
+        player.playVideo();
+        setTimeout(() => isSyncing = false, 400);
+      }
+    });
+
+    socket.on("pause", () => {
+      if (!player || !joined) return;
+      isSyncing = true;
+      player.pauseVideo();
+      setTimeout(() => isSyncing = false, 400);
+    });
+
+    socket.on("syncAction", (data) => {
+      if (!player || !joined) return;
+      if (isScrubbing) return;
+
+      const now = Date.now();
+      const rate = data.playbackRate || player.getPlaybackRate() || 1;
+
+      const timePassedSinceAction = (now - data.clockTime) / 1000;
+      const adjustedTargetTime = data.videoTime + (timePassedSinceAction * rate);
+
+      const drift = Math.abs(player.getCurrentTime() - adjustedTargetTime);
+
+      if (drift > 0.45) {
+        isSyncing = true;
+
+        if (data.playbackRate && Math.abs(player.getPlaybackRate() - data.playbackRate) > 0.01) {
+          player.setPlaybackRate(data.playbackRate);
+        }
+
+        player.seekTo(adjustedTargetTime, true);
+        setTimeout(() => isSyncing = false, 350);
+      }
+    });
+
+    socket.on("changeVideo", (videoId) => {
+      noVideoOverlay.style.display = "none";
+      if (!player || !joined) return;
+      isSyncing = true;
+      player.loadVideoById(videoId);
+      setTimeout(() => isSyncing = false, 1000);
+      setTimeout(refreshHistory, 400);
+
+    });
+
+    async function refreshHistory() {
+      if (!salonId) return;
+
+      try {
+        const resp = await fetch(`http://localhost:4000/api/historique?salonId=${salonId}`);
+        const entries = await resp.json();
+
+        const top = (entries || []).slice(0, 8);
+        historyBox.innerHTML = `
+          <b>Historique</b><br>
+          ${top.length === 0
+            ? `<i>Aucune vidéo.</i>`
+            : top.map(h => {
+                const date = h.date_visionnage
+                  ? new Date(h.date_visionnage).toLocaleString("fr-FR")
+                  : "";
+                return `• <a href="${h.url_video}" target="_blank">${h.url_video}</a>
+                        <br><span style="opacity:.6">${date}</span>`;
+              }).join("<br>")
+          }
+        `;
+      } catch (e) {
+        console.error("refreshHistory error:", e);
+      }
+    }
+
+    async function refreshChat() {
+      if (!salonId) return;
+      try {
+        const resp = await fetch(`http://localhost:4000/api/messages?salonId=${salonId}`);
+        const msgs = await resp.json();
+        chatMessages.innerHTML = "";
+        (msgs || []).slice(-50).forEach(appendChatMessage);
+      } catch (e) {
+        console.error("refreshChat error:", e);
+      }
+    }
+
+    function openJoinModal() {
+      joinError.textContent = "";
+      joinCodeLabel.textContent = codeAcces || "";
+      joinModal.style.display = "flex";
+      setTimeout(() => joinPseudo.focus(), 50);
+    }
+
+    function closeJoinModal() {
+      joinModal.style.display = "none";
+    }
+    if (joinClose) joinClose.addEventListener("click", () => {
+      blockAccess("Accès refusé : pseudo requis.");
+      closeJoinModal();
+    });
+    joinModal.addEventListener("click", (e) => {
+      if (e.target === joinModal) {
+        blockAccess("Accès refusé : pseudo requis.");
+        closeJoinModal();
+      }
+    });
+
+  </script>
+
+  <!-- ✅ Module Playlist (utilise socket + codeAcces) -->
+  <script type="module">
+    import { Playlist } from "/src/frontend/components/playlist/index.js";
+
+    // on récupère les variables globales déclarées plus haut
+    const mount = document.getElementById("playlistMount");
+
+    // Instancie la playlist dès maintenant (UI), mais socket/userId seront ok après join
+    const pl = new Playlist(codeAcces).init(socket, { codeAcces, userId });
+
+    pl.render(mount);
+
+    // Une fois que userId est connu on le passe
+    socket.on("joinedRoom", () => {
+      console.log("[Playlist] ready for salon", codeAcces, "userId=", userId);
+      pl.setUserId(userId);
+    });
+  </script>
+</body>
+</html>

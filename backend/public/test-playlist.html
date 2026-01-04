@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Playlist - Sara - AMS IL</title>
+    
+    <!-- Importar estilos Playlist -->
+    <link rel="stylesheet" href="src/frontend/components/playlist/Playlist.css">
+    
+    <style>
+        /* Estilos para la página de prueba */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #f8fafc;
+        }
+        
+        .test-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+        
+        .test-header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .test-header .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 5px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .test-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .playlist-demo-area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .playlist-demo-area h2 {
+            color: #f8fafc;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .playlist-demo-area h2 i {
+            font-size: 1.3rem;
+        }
+        
+        .playlist-visual {
+            height: 500px;
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+        }
+        
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .controls-panel h2 {
+            color: #f8fafc;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .control-input {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .control-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+        
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .btn-icon {
+            font-size: 1.1rem;
+        }
+        
+        .status-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .status-title {
+            color: #f59e0b;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-content {
+            color: #86efac;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        /* Estilos para videos simulados en la playlist */
+        .playlist-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+        
+        .playlist-item.current {
+            background: rgba(245, 158, 11, 0.15);
+            border-left-color: #3b82f6;
+        }
+        
+        .video-thumbnail {
+            width: 80px;
+            height: 45px;
+            border-radius: 6px;
+            background: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #94a3b8;
+        }
+        
+        .video-info {
+            flex: 1;
+        }
+        
+        .video-title {
+            color: #f8fafc;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .video-meta {
+            display: flex;
+            gap: 15px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        
+        .video-duration {
+            color: #f59e0b;
+        }
+        
+        .empty-playlist {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-playlist i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Test Playlist</h1>
+    </div>
+    
+    <div class="test-container">
+        <!-- Panel izquierdo: Visualización Playlist -->
+        <div class="playlist-demo-area">
+            <h2> Playlist Visual</h2>
+            <div class="playlist-visual" id="playlistVisual">
+                <div class="empty-playlist">
+                    <i>📭</i>
+                    <p>Playlist vide</p>
+                    <p>Ajoutez des vidéos pour commencer</p>
+                </div>
+            </div>
+            
+            <div class="status-panel">
+                <div class="status-title">
+                    <i>📊</i> État de la Playlist
+                </div>
+                <div class="status-content" id="playlistStatus">
+Salon: Non initialisé
+Videos: 0
+Vidéo actuelle: Aucune
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel derecho: Controles -->
+        <div class="controls-panel">
+            <h2><i>⚙️</i> Contrôles de Test</h2>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label>Initialisation:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-primary" onclick="initPlaylistTest()">
+                            <span class="btn-icon">🚀</span>
+                            Initialiser Playlist
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>URL Vidéo YouTube:</label>
+                    <input type="text" id="videoUrlInput" class="control-input" 
+                           placeholder="https://youtube.com/watch?v=..." 
+                           value="">
+                </div>
+                
+                <div class="control-group">
+                    <label>Actions Vidéos:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-secondary" onclick="addVideoTest()">
+                            <span class="btn-icon">➕</span>
+                            Ajouter Vidéo
+                        </button>
+                        <button class="btn btn-secondary" onclick="nextVideoTest()">
+                            <span class="btn-icon">⏭️</span>
+                            Vidéo Suivante
+                        </button>
+                        <button class="btn btn-secondary" onclick="prevVideoTest()">
+                            <span class="btn-icon">⏮️</span>
+                            Vidéo Précédente
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearPlaylistTest()">
+                            <span class="btn-icon">🗑️</span>
+                            Vider Playlist
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Debug:</label>
+                    <div class="buttons-grid">
+                        <button class="btn btn-secondary" onclick="showPlaylistState()">
+                            <span class="btn-icon">🐛</span>
+                            État Console
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Socket.IO client (obligatoire pour io(...)) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- Importar el componente Playlist -->
+    <script type="module">
+        import { Playlist } from './src/frontend/components/playlist/Playlist.js';
+
+        // ✅ Récup params URL: ?code=xxxx&userId=3
+        const params = new URLSearchParams(window.location.search);
+        const codeAcces = params.get("code");
+        const userId = Number(params.get("userId"));
+
+        if (!codeAcces || !userId) {
+            alert("Il manque ?code=...&userId=...");
+            throw new Error("Missing codeAcces/userId in URL");
+        }
+
+        // ✅ Socket connecté au backend
+        const socket = io("http://localhost:4000", { transports: ["websocket", "polling"] });
+
+        socket.on("connect", () => {
+            console.log("socket connected", socket.id);
+            socket.emit("joinRoom", { codeAcces, userId });
+        });
+
+        socket.on("errorMessage", ({ error }) => {
+            console.log("errorMessage:", error);
+            alert("Accès refusé : " + (error || "Erreur"));
+        });
+
+        socket.on("joinedRoom", () => {
+            console.log("✅ joinedRoom OK");
+            updateTestLog(`Connecté au salon ${codeAcces} avec userId=${userId}`);
+        });
+
+        // Variables globales
+        let playlistInstance = null;
+
+        // ===== TEST =====
+
+        // 1. Initialiser playlist (branchée salon réel)
+        window.initPlaylistTest = function() {
+            console.log('=== INITIALISATION PLAYLIST (CONNECTÉE) ===');
+
+            // ✅ IMPORTANT : salonId = codeAcces
+            playlistInstance = new Playlist(codeAcces);
+
+            // ✅ IMPORTANT : init(socket, { codeAcces })
+            playlistInstance.init(socket, { codeAcces });
+
+            // ✅ render du composant dans la zone
+            const visual = document.getElementById("playlistVisual");
+            visual.innerHTML = "";
+            playlistInstance.render(visual);
+
+            updatePlaylistStatus();
+            updateTestLog("Playlist initialisée (connectée)");
+        };
+
+        // 2. Ajouter video (async car addVideo est async)
+        window.addVideoTest = async function() {
+            if (!playlistInstance) {
+                alert("Initialisez d'abord la playlist");
+                return;
+            }
+
+            const urlInput = document.getElementById("videoUrlInput");
+            const videoUrl = urlInput.value.trim();
+
+            if (!videoUrl) {
+                alert("Entrez une URL YouTube");
+                return;
+            }
+
+            const video = await playlistInstance.addVideo(videoUrl, "Sara");
+
+            // re-render (car ton composant render/update est interne)
+            const visual = document.getElementById("playlistVisual");
+            playlistInstance.render(visual);
+
+            updatePlaylistStatus();
+            updateTestLog(`Vidéo ajoutée: "${video.title}"`);
+
+            urlInput.value = "";
+        };
+
+        // 3. Next video
+        window.nextVideoTest = function() {
+            if (!playlistInstance) return;
+
+            const nextVideo = playlistInstance.nextVideo();
+
+            const visual = document.getElementById("playlistVisual");
+            playlistInstance.render(visual);
+
+            updatePlaylistStatus();
+
+            if (nextVideo) updateTestLog(`Vidéo suivante: "${nextVideo.title}"`);
+        };
+
+        // 4. Prev video
+        window.prevVideoTest = function() {
+            if (!playlistInstance) return;
+
+            const prevVideo = playlistInstance.previousVideo();
+
+            const visual = document.getElementById("playlistVisual");
+            playlistInstance.render(visual);
+
+            updatePlaylistStatus();
+
+            if (prevVideo) updateTestLog(`Vidéo précédente: "${prevVideo.title}"`);
+        };
+
+        // 5. Clear playlist
+        window.clearPlaylistTest = function() {
+            if (!playlistInstance) return;
+
+            playlistInstance.videos = [];
+            playlistInstance.currentVideoIndex = 0;
+
+            const visual = document.getElementById("playlistVisual");
+            playlistInstance.render(visual);
+
+            updatePlaylistStatus();
+            updateTestLog("Playlist vidée (local)");
+        };
+
+        // 6. Debug
+        window.showPlaylistState = function() {
+            console.log("=== ÉTAT PLAYLIST ===");
+            console.log("codeAcces:", codeAcces);
+            console.log("userId:", userId);
+            console.log("Instance:", playlistInstance);
+            updateTestLog("État affiché dans la console (F12)");
+        };
+
+        // ===== UI =====
+
+        function updatePlaylistStatus() {
+            const statusElement = document.getElementById("playlistStatus");
+            if (!statusElement) return;
+
+            if (!playlistInstance) {
+                statusElement.textContent = "Salon: Non initialisé\nVideos: 0\nVidéo actuelle: Aucune";
+                return;
+            }
+
+            const current = playlistInstance.getCurrentVideo();
+            statusElement.textContent =
+`Salon(codeAcces): ${codeAcces}
+userId: ${userId}
+Videos: ${playlistInstance.videos.length}
+Vidéo actuelle: ${current ? `"${current.title}"` : "Aucune"}
+Index: ${playlistInstance.videos.length ? (playlistInstance.currentVideoIndex + 1) : 0}/${playlistInstance.videos.length || 0}
+Ajoutée par: ${current ? current.addedBy : "---"}`;
+        }
+
+        function updateTestLog(message) {
+            const now = new Date().toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            console.log(`[${now}] 📝 ${message}`);
+        }
+
+        // Auto-init
+        console.log("=== TEST PLAYLIST (CONNECTÉ) ===");
+        updateTestLog("Prêt pour les tests");
+        setTimeout(() => window.initPlaylistTest(), 500);
+    </script>
+</body>
+</html>
