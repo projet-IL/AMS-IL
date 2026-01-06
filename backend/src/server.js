@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
           url_video: it.url_video,
           titre: it.titre,
           ajoute_par: it.ajoute_par,
-          pseudo: it.utilisateur?.pseudo || null, // ✅
+          pseudo: it.utilisateur?.pseudo || null, 
         })),
       });
       
