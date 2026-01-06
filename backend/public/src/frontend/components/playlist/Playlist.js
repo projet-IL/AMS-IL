@@ -13,7 +13,6 @@ export class Playlist {
     console.log(`[Playlist] Componente creado para salón: ${salonId}`);
   }
 
-  // options: { codeAcces, userId }
   init(socketConnection, options = {}) {
     this.socket = socketConnection;
     this.codeAcces = options.codeAcces || null;
@@ -23,7 +22,6 @@ export class Playlist {
     if (this.codeAcces) console.log(`[Playlist] codeAcces détecté: ${this.codeAcces}`);
     if (this.userId) console.log(`[Playlist] userId détecté: ${this.userId}`);
 
-    // ✅ bind events une seule fois
     this.bindSocketEvents();
 
     return this;
@@ -37,12 +35,10 @@ export class Playlist {
     if (!this.socket || this._socketBound) return;
     this._socketBound = true;
 
-    // ✅ snapshot playlist DB à l'arrivée
     this.socket.on("playlistSnapshot", async ({ codeAcces, items }) => {
       if (!this.codeAcces || codeAcces !== this.codeAcces) return;
 
       try {
-        // On reconstruit la playlist depuis DB
         const mapped = await Promise.all(
           (items || []).map(async (it) => {
             const vid = this.extractYouTubeId(it.url_video) || it.url_video;
@@ -70,15 +66,12 @@ export class Playlist {
       }
     });
 
-    //  quelqu'un ajoute une vidéo -> tout le monde la reçoit
     this.socket.on("playlistItemAdded", async (item) => {
       try {
-        // item: { id, id_salon, ajoute_par, url_video, titre }
         if (!item?.url_video) return;
 
         const vid = this.extractYouTubeId(item.url_video) || item.url_video;
 
-        // evite doublons
         if (this.videos.some(v => v.id === vid)) return;
 
         const data = await this.fetchYouTubeData(vid);
@@ -92,7 +85,7 @@ export class Playlist {
           addedBy: item.pseudo || `user#${item.ajoute_par}`, //  FIX
           addedAt: "",
           channel: data.channel,
-          _dbId: item.id, //  DB id pour delete
+          _dbId: item.id, 
         };
 
         this.videos.push(video);
@@ -108,7 +101,6 @@ export class Playlist {
       }
     });
 
-    //L supprime video de playlist 
     this.socket.on("playlistItemRemoved", ({ id }) => {
       const before = this.videos.length;
       this.videos = this.videos.filter(v => v._dbId !== Number(id));
@@ -157,7 +149,7 @@ export class Playlist {
       <div class="playlist-component" data-salon="${this.salonId}">
         <div class="playlist-header">
           <h3 class="playlist-title">
-            <span class="playlist-icon">🎵</span>
+            <span class="playlist-icon"></span>
             Playlist Collaborative
           </h3>
           <div class="playlist-stats">
@@ -168,20 +160,20 @@ export class Playlist {
 
         <div class="playlist-controls">
           <button class="control-btn add-video-btn" id="addBtn-${this.salonId}">
-            <span class="btn-icon">➕</span>
+            <span class="btn-icon"></span>
             <span class="btn-text">Ajouter une vidéo</span>
           </button>
 
           <div class="navigation-controls">
             <button class="control-btn prev-btn" id="prevBtn-${this.salonId}"
                     ${this.videos.length <= 1 ? 'disabled' : ''}>
-              <span class="btn-icon">⏮️</span>
+              <span class="btn-icon"></span>
               Précédent
             </button>
 
             <button class="control-btn next-btn" id="nextBtn-${this.salonId}"
                     ${this.videos.length <= 1 ? 'disabled' : ''}>
-              <span class="btn-icon">⏭️</span>
+              <span class="btn-icon"></span>
               Suivant
             </button>
           </div>
@@ -189,7 +181,7 @@ export class Playlist {
 
         <div class="current-video-section" ${!currentVideo ? 'style="display: none;"' : ''}>
           <div class="current-video-header">
-            <h4>🎬 En cours de lecture</h4>
+            <h4> En cours de lecture</h4>
             <span class="current-badge">MAINTENANT</span>
           </div>
 
@@ -197,7 +189,7 @@ export class Playlist {
             <div class="current-thumbnail">
               ${currentVideo ?
                 `<img src="${currentVideo.thumbnail}" alt="${currentVideo.title}">`
-                : '<div class="thumbnail-placeholder">🎬</div>'
+                : '<div class="thumbnail-placeholder"></div>'
               }
             </div>
             <div class="current-video-info">
@@ -213,7 +205,7 @@ export class Playlist {
         <div class="playlist-items-container" id="items-${this.salonId}">
           ${this.videos.length === 0 ? `
             <div class="empty-playlist-state">
-              <div class="empty-icon">📭</div>
+              <div class="empty-icon"></div>
               <p class="empty-title">Playlist vide</p>
               <p class="empty-subtitle">Ajoutez des vidéos YouTube pour commencer</p>
               <button class="empty-action-btn" id="firstAddBtn-${this.salonId}">
@@ -229,7 +221,7 @@ export class Playlist {
                 <img src="${video.thumbnail}" alt="${video.title}"
                      onerror="this.src='https://img.youtube.com/vi/dQw4w9WgXcQ/default.jpg'">
                 ${index === this.currentVideoIndex ?
-                  '<div class="playing-indicator">▶️</div>' : ''}
+                  '<div class="playing-indicator"></div>' : ''}
               </div>
 
               <div class="item-info">
@@ -244,8 +236,8 @@ export class Playlist {
               </div>
 
               <div class="item-actions">
-                <button class="item-action-btn play-btn" title="Lire cette vidéo">▶️</button>
-                <button class="item-action-btn remove-btn" title="Supprimer de la playlist">🗑️</button>
+                <button class="item-action-btn play-btn" title="Lire cette vidéo"></button>
+                <button class="item-action-btn remove-btn" title="Supprimer de la playlist"></button>
               </div>
             </div>
           `).join('')}
@@ -301,7 +293,6 @@ export class Playlist {
         channel: videoData.channel
       };
 
-      // ✅ IMPORTANT : si socket + codeAcces + userId => on passe par serveur
       if (this.socket && this.codeAcces && this.userId) {
         this.socket.emit("playlistAdd", {
           codeAcces: this.codeAcces,
@@ -309,11 +300,9 @@ export class Playlist {
           url_video: video.url,
           titre: video.title,
         });
-        // on ne push pas local : on attend playlistItemAdded
         return video;
       }
 
-      // fallback local
       this.videos.push(video);
 
       if (this.videos.length === 1) {
@@ -370,7 +359,6 @@ export class Playlist {
       return { title, thumbnail: thumbnailUrl, duration, channel };
     }
 
-    // ⚠️ mock fallback (pas les vraies durées)
     return {
       title: `Vidéo YouTube (${videoId.substring(0, 4)}...)`,
       thumbnail: thumbnailUrl,
@@ -413,7 +401,6 @@ export class Playlist {
   }
 
   calculateTotalDuration() {
-    // ⚠️ tant qu'on n'a pas les vraies durées -> éviter de mentir
     if (this.videos.some(v => !v.duration || v.duration === '--:--')) return '--';
     return '--';
   }
@@ -493,7 +480,6 @@ export class Playlist {
 
         if (!playlistItem) return;
 
-        // ▶️ play
         if (playBtn) {
           const index = parseInt(playlistItem.dataset.index);
           this.currentVideoIndex = index;
@@ -504,7 +490,6 @@ export class Playlist {
           return;
         }
 
-        // 🗑 remove (DB)
         if (removeBtn) {
           const dbId = Number(playlistItem.dataset.dbId);
           if (!dbId) return alert("Impossible de supprimer : id DB manquant.");
