@@ -8,7 +8,6 @@ function genCodeAcces() {
   return crypto.randomBytes(6).toString("hex"); // 12 chars
 }
 
-// ✅ Créer un salon
 // body: { nom, pseudo, code_pin? }
 r.post("/", async (req, res) => {
   try {
@@ -51,7 +50,6 @@ r.post("/", async (req, res) => {
 });
 
 
-// ✅ Lister salons
 r.get("/", async (_req, res) => {
   const salons = await prisma.salon.findMany({
     orderBy: { createdAt: "desc" },
@@ -59,7 +57,6 @@ r.get("/", async (_req, res) => {
   res.json(salons);
 });
 
-// ✅ Récupérer un salon par code_acces (lien personnalisé)
 r.get("/:codeAcces", async (req, res) => {
   const salon = await prisma.salon.findUnique({
     where: { code_acces: req.params.codeAcces },
@@ -75,7 +72,6 @@ r.get("/:codeAcces", async (req, res) => {
   res.json(salon);
 });
 
-// ✅ Rejoindre un salon (pseudo temporaire + vérif PIN)
 // body: { pseudo, code_pin? }
 // Rejoindre un salon (pseudo + PIN)
 r.post("/:codeAcces/join", async (req, res) => {
@@ -108,7 +104,6 @@ r.post("/:codeAcces/join", async (req, res) => {
 });
 
 
-// ✅ Quitter un salon (supprime l’utilisateur)
 // body: { utilisateurId }
 r.post("/:codeAcces/leave", async (req, res) => {
   try {
@@ -122,7 +117,6 @@ r.post("/:codeAcces/leave", async (req, res) => {
   }
 });
 
-// ✅ Supprimer un salon (cascade : utilisateurs/messages/playlist/historique)
 r.delete("/:codeAcces", async (req, res) => {
   try {
     const salon = await prisma.salon.findUnique({
