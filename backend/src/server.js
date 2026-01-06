@@ -224,7 +224,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // ✅ ANTI-DOUBLON ICI (avant create)
+      // ANTI-DOUBLON ICI (avant create)
       const already = await prisma.elementPlaylist.findFirst({
         where: { id_salon: salon.id, url_video },
         select: { id: true },
@@ -299,76 +299,59 @@ io.on("connection", (socket) => {
     }
   });
 
-  // SYNCHRO VIDEO 
-  // Tous les payloads incluent codeAcces
+  /* !!!!!!!!!!!!!!! SYNCHRO VIDEO !!!!!!!!!!!!!!! */
+  // Tous les payloads incluent maintenant codeAcces pour permettre aux différents salons d'avoir leur propre synchro
 
-  // ▶️ play
   socket.on("play", ({ codeAcces }) => {
     const state = videoStates[codeAcces];
     if (!state) return;
-
     state.isPlaying = true;
-    state.clockTime = Date.now();
-
+    state.clockTime = Date.now(); // Enregistrer l'horaire du play
     socket.to(codeAcces).emit("play");
   });
 
-  // ⏸ pause
   socket.on("pause", ({ codeAcces }) => {
     const state = videoStates[codeAcces];
     if (!state) return;
-
     state.isPlaying = false;
-
     socket.to(codeAcces).emit("pause");
   });
 
-  // 🔁 syncAction (seek + play)
+
   socket.on("syncAction", ({ codeAcces, videoTime, clockTime, playbackRate }) => {
     const state = videoStates[codeAcces];
     if (!state) return;
-
     state.videoTime = videoTime;
     state.clockTime = clockTime;
     if (playbackRate) state.playbackRate = playbackRate;
-
     socket.to(codeAcces).emit("syncAction", { videoTime, clockTime, playbackRate });
   });
 
-  // ⚡ changeSpeed
   socket.on("changeSpeed", ({ codeAcces, speed }) => {
     const state = videoStates[codeAcces];
     if (!state) return;
-
     state.playbackRate = speed;
-
     socket.to(codeAcces).emit("changeSpeed", speed);
   });
 
-  // 🫀 videoTime pulse (mise à jour pour les nouveaux users)
+  // Mise à jour de l'état de la vid pour les new users
   socket.on("videoTime", ({ codeAcces, videoTime, clockTime, playbackRate }) => {
     const state = videoStates[codeAcces];
     if (!state) return;
-
     state.videoTime = videoTime;
     state.clockTime = clockTime;
     if (playbackRate) state.playbackRate = playbackRate;
   });
 
-  // 🎬 changeVideo
   socket.on("changeVideo", async ({ codeAcces, videoId }) => {
     const state = videoStates[codeAcces];
-    if (!state) return;
-
-    // retrouver salon id
-    const salon = await prisma.salon.findUnique({
+    if (!state) return;    
+    const salon = await prisma.salon.findUnique({ // retrouver salon id
       where: { code_acces: codeAcces },
       select: { id: true },
     });
     if (!salon) return;
-
-    // si on avait déjà une vidéo -> on la pousse en historique
-    if (state.videoId && state.videoId !== videoId) {
+    if (state.videoId && state.videoId !== videoId) { // si on avait déjà une vidéo -> on la pousse en historique
       await prisma.historique.create({
         data: {
           id_salon: salon.id,
@@ -382,7 +365,6 @@ io.on("connection", (socket) => {
     state.videoTime = 0;
     state.clockTime = Date.now();
     state.isPlaying = true;
-
     io.to(codeAcces).emit("changeVideo", videoId);
   });
 
@@ -391,34 +373,25 @@ io.on("connection", (socket) => {
     const codeAcces = socket.data?.codeAcces;
     const userId = socket.data?.userId;
     if (!codeAcces || !userId) return;
-
     const roomMap = onlineByRoom.get(codeAcces);
     if (!roomMap) return;
-
     const entry = roomMap.get(userId);
     if (!entry) return;
-
     entry.sockets.delete(socket.id);
-
-    if (entry.sockets.size === 0) {
-      roomMap.delete(userId);
-    }
-
-    if (roomMap.size === 0) {
-      onlineByRoom.delete(codeAcces);
-    } else {
+    if (entry.sockets.size === 0) roomMap.delete(userId);
+    if (roomMap.size === 0) onlineByRoom.delete(codeAcces);
+    else {
       io.to(codeAcces).emit("participantsOnline", {
         codeAcces,
         online: Array.from(roomMap.values()).map(x => ({ userId: x.userId, pseudo: x.pseudo }))
       });
     }
-
-    console.log("❌ Socket disconnected:", socket.id);
+    console.log("Socket disconnected:", socket.id);
   });
 
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4000; //Utilisation du port 4000 http accessible sur pedago
 httpServer.listen(PORT, () => {
-  console.log(`🚀 API + Socket.IO démarrée sur ${PORT}`);
+  console.log(`API + Socket.IO démarrés sur ${PORT}`);
 });
