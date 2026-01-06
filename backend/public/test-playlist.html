@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Playlist - Sara - AMS IL</title>
     
-    <!-- Importar estilos Playlist -->
     <link rel="stylesheet" href="src/frontend/components/playlist/Playlist.css">
     
     <style>
-        /* Estilos para la página de prueba */
         * {
             margin: 0;
             padding: 0;
@@ -297,7 +295,6 @@
     </div>
     
     <div class="test-container">
-        <!-- Panel izquierdo: Visualización Playlist -->
         <div class="playlist-demo-area">
             <h2> Playlist Visual</h2>
             <div class="playlist-visual" id="playlistVisual">
@@ -320,16 +317,15 @@ Vidéo actuelle: Aucune
             </div>
         </div>
         
-        <!-- Panel derecho: Controles -->
         <div class="controls-panel">
-            <h2><i>⚙️</i> Contrôles de Test</h2>
+            <h2><i></i> Contrôles de Test</h2>
             
             <div class="controls">
                 <div class="control-group">
                     <label>Initialisation:</label>
                     <div class="buttons-grid">
                         <button class="btn btn-primary" onclick="initPlaylistTest()">
-                            <span class="btn-icon">🚀</span>
+                            <span class="btn-icon"></span>
                             Initialiser Playlist
                         </button>
                     </div>
@@ -346,19 +342,19 @@ Vidéo actuelle: Aucune
                     <label>Actions Vidéos:</label>
                     <div class="buttons-grid">
                         <button class="btn btn-secondary" onclick="addVideoTest()">
-                            <span class="btn-icon">➕</span>
+                            <span class="btn-icon"></span>
                             Ajouter Vidéo
                         </button>
                         <button class="btn btn-secondary" onclick="nextVideoTest()">
-                            <span class="btn-icon">⏭️</span>
+                            <span class="btn-icon"></span>
                             Vidéo Suivante
                         </button>
                         <button class="btn btn-secondary" onclick="prevVideoTest()">
-                            <span class="btn-icon">⏮️</span>
+                            <span class="btn-icon"></span>
                             Vidéo Précédente
                         </button>
                         <button class="btn btn-secondary" onclick="clearPlaylistTest()">
-                            <span class="btn-icon">🗑️</span>
+                            <span class="btn-icon"></span>
                             Vider Playlist
                         </button>
                     </div>
@@ -368,7 +364,7 @@ Vidéo actuelle: Aucune
                     <label>Debug:</label>
                     <div class="buttons-grid">
                         <button class="btn btn-secondary" onclick="showPlaylistState()">
-                            <span class="btn-icon">🐛</span>
+                            <span class="btn-icon"></span>
                             État Console
                         </button>
                     </div>
@@ -377,14 +373,11 @@ Vidéo actuelle: Aucune
         </div>
     </div>
 
-    <!-- ✅ Socket.IO client (obligatoire pour io(...)) -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-    <!-- Importar el componente Playlist -->
     <script type="module">
         import { Playlist } from './src/frontend/components/playlist/Playlist.js';
 
-        // ✅ Récup params URL: ?code=xxxx&userId=3
         const params = new URLSearchParams(window.location.search);
         const codeAcces = params.get("code");
         const userId = Number(params.get("userId"));
@@ -394,7 +387,6 @@ Vidéo actuelle: Aucune
             throw new Error("Missing codeAcces/userId in URL");
         }
 
-        // ✅ Socket connecté au backend
         const socket = io("http://localhost:4000", { transports: ["websocket", "polling"] });
 
         socket.on("connect", () => {
@@ -412,22 +404,16 @@ Vidéo actuelle: Aucune
             updateTestLog(`Connecté au salon ${codeAcces} avec userId=${userId}`);
         });
 
-        // Variables globales
         let playlistInstance = null;
 
-        // ===== TEST =====
 
-        // 1. Initialiser playlist (branchée salon réel)
         window.initPlaylistTest = function() {
             console.log('=== INITIALISATION PLAYLIST (CONNECTÉE) ===');
 
-            // ✅ IMPORTANT : salonId = codeAcces
             playlistInstance = new Playlist(codeAcces);
 
-            // ✅ IMPORTANT : init(socket, { codeAcces })
             playlistInstance.init(socket, { codeAcces });
 
-            // ✅ render du composant dans la zone
             const visual = document.getElementById("playlistVisual");
             visual.innerHTML = "";
             playlistInstance.render(visual);
@@ -436,7 +422,6 @@ Vidéo actuelle: Aucune
             updateTestLog("Playlist initialisée (connectée)");
         };
 
-        // 2. Ajouter video (async car addVideo est async)
         window.addVideoTest = async function() {
             if (!playlistInstance) {
                 alert("Initialisez d'abord la playlist");
@@ -453,7 +438,6 @@ Vidéo actuelle: Aucune
 
             const video = await playlistInstance.addVideo(videoUrl, "Sara");
 
-            // re-render (car ton composant render/update est interne)
             const visual = document.getElementById("playlistVisual");
             playlistInstance.render(visual);
 
@@ -463,7 +447,6 @@ Vidéo actuelle: Aucune
             urlInput.value = "";
         };
 
-        // 3. Next video
         window.nextVideoTest = function() {
             if (!playlistInstance) return;
 
@@ -477,7 +460,6 @@ Vidéo actuelle: Aucune
             if (nextVideo) updateTestLog(`Vidéo suivante: "${nextVideo.title}"`);
         };
 
-        // 4. Prev video
         window.prevVideoTest = function() {
             if (!playlistInstance) return;
 
@@ -491,7 +473,6 @@ Vidéo actuelle: Aucune
             if (prevVideo) updateTestLog(`Vidéo précédente: "${prevVideo.title}"`);
         };
 
-        // 5. Clear playlist
         window.clearPlaylistTest = function() {
             if (!playlistInstance) return;
 
@@ -505,7 +486,6 @@ Vidéo actuelle: Aucune
             updateTestLog("Playlist vidée (local)");
         };
 
-        // 6. Debug
         window.showPlaylistState = function() {
             console.log("=== ÉTAT PLAYLIST ===");
             console.log("codeAcces:", codeAcces);
@@ -514,7 +494,6 @@ Vidéo actuelle: Aucune
             updateTestLog("État affiché dans la console (F12)");
         };
 
-        // ===== UI =====
 
         function updatePlaylistStatus() {
             const statusElement = document.getElementById("playlistStatus");
@@ -544,7 +523,6 @@ Ajoutée par: ${current ? current.addedBy : "---"}`;
             console.log(`[${now}] 📝 ${message}`);
         }
 
-        // Auto-init
         console.log("=== TEST PLAYLIST (CONNECTÉ) ===");
         updateTestLog("Prêt pour les tests");
         setTimeout(() => window.initPlaylistTest(), 500);
