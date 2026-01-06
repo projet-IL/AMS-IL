@@ -236,6 +236,8 @@
 
     // socket (local ou pedago)
     const socket = io(API_BASE, { transports: ["websocket", "polling"] });
+    // Socket précédement utilis avec render pour l'ancienne synchro vidéo :
+    /* const socket = io('https://ams-il.onrender.com/', {transports: ['websocket', 'polling']}); */
     
     // recevoir message temps réel
     socket.on("chatMessageCreated", (msg) => {
@@ -243,18 +245,16 @@
       appendChatMessage(msg);
     });
 
-    //  YouTube API
+    // Ajout de l'API YouTube pour la Vidéo et la Playlist
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
     var player;
-
     let pulseInterval = null;
     let isSyncing = false;
     let joined = false;
-
     let lastState = null;
     let lastSyncSentAt = 0;
     let pendingSyncTimeout = null;
@@ -297,7 +297,7 @@
             const code_pin = (joinPin.value || "").trim();
 
             if (!pseudo) {
-              joinError.textContent = "❌ Pseudo requis.";
+              joinError.textContent = "Pseudo requis.";
               return;
             }
 
@@ -319,7 +319,7 @@
               null;
 
             if (!resp.ok) {
-              joinError.textContent = "❌ " + (data?.error || "Erreur");
+              joinError.textContent = (data?.error || "Erreur");
               joinSubmit.disabled = false;
               joinSubmit.textContent = "Entrer";
               return;
@@ -327,7 +327,7 @@
 
             const newUserId = data?.utilisateur?.id;
             if (!newUserId) {
-              joinError.textContent = "❌ Join OK mais userId manquant.";
+              joinError.textContent = "Join OK mais userId manquant.";
               joinSubmit.disabled = false;
               joinSubmit.textContent = "Entrer";
               return;
@@ -340,7 +340,7 @@
             resolve(userId);
           } catch (e) {
             console.error(e);
-            joinError.textContent = "❌ Erreur réseau.";
+            joinError.textContent = "Erreur réseau.";
             joinSubmit.disabled = false;
             joinSubmit.textContent = "Entrer";
           }
@@ -360,7 +360,7 @@
     }
 
 
-    // ✅ 2) Join socket seulement après userId valide
+    // Join socket seulement après userId valide
     socket.on("connect", async () => {
       console.log("socket connected", socket.id);
       try {
@@ -398,12 +398,17 @@
       `;
     });
 
-    function sendSyncActionDebounced() {
-      if (!player) return;
 
+    
+    /* !!!!!!!!!!! Partie Synchronisation Vidéo !!!!!!!!!!!*/
+
+    
+    function sendSyncActionDebounced() { 
+      // Permet d'arrêter les vas et viens de la vidéo
+      /* D'autre vérifications ont été faites dans le code avant mais autant les garder pour sécuriser au maximum */
+      if (!player) return;
       const now = Date.now();
       const delay = 300;
-
       const payload = {
         codeAcces,
         videoTime: player.getCurrentTime(),
@@ -414,7 +419,8 @@
       if (now - lastSyncSentAt > delay) {
         lastSyncSentAt = now;
         socket.emit("syncAction", payload);
-      } else {
+      }
+      else {
         clearTimeout(pendingSyncTimeout);
         pendingSyncTimeout = setTimeout(() => {
           lastSyncSentAt = Date.now();
@@ -445,7 +451,7 @@
       }
     });
 
-    function startPulse() {
+    function startPulse() { // Démarrer le "pulse" pour donner notre progression au server (pour les new users)
       clearInterval(pulseInterval);
       pulseInterval = setInterval(() => {
         if (!player || !joined) return;
@@ -455,7 +461,7 @@
           clockTime: Date.now(),
           playbackRate: player.getPlaybackRate()
         });
-      }, 5000);
+      }, 5000); // Mise à jour toutes les 5 secondes
     }
 
     function stopPulse() {
@@ -463,13 +469,12 @@
       pulseInterval = null;
     }
 
-    // ✅ IMPORTANT : autoplay: 0
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
         height: '100%',
         width: '100%',
-        videoId: 'RzVvThhjAKw',
-        playerVars: { autoplay: 0, mute: 1 },
+        videoId: 'RzVvThhjAKw', //Vidéo par défaut si un problème parviendrait
+        playerVars: { autoplay: 0, mute: 1 }, // mute parce que l'API Youtube n'aime pas l'autoplay sans mute
         events: {
           onStateChange: onPlayerStateChange,
           onPlaybackRateChange: onPlaybackRateChange,
@@ -478,10 +483,10 @@
       });
     }
 
+    // Changement de vitesse pour tout le monde
     function onPlaybackRateChange(event) {
       if (!joined) return;
       if (isSyncing) return;
-
       const newSpeed = event.data;
       socket.emit("changeSpeed", { codeAcces, speed: newSpeed });
       sendSyncActionDebounced();
@@ -490,18 +495,18 @@
     function onPlayerStateChange(event) {
       if (!joined) return;
       if (isSyncing) return;
-
       if (event.data === lastState) return;
       lastState = event.data;
 
+      // Sync quand Play ou déplacement
       if (event.data === YT.PlayerState.PLAYING) {
         socket.emit("play", { codeAcces });
         sendSyncActionDebounced();
-        startPulse();
+        startPulse(); // Play pour tous les users
       }
       else if (event.data === YT.PlayerState.PAUSED) {
         socket.emit("pause", { codeAcces });
-        stopPulse();
+        stopPulse(); // Arrêter le pulse lorsque la vidéo est en pause
       }
     }
 
@@ -517,9 +522,8 @@
             noVideoOverlay.style.display = "flex";
             try { player.pauseVideo(); } catch {}
             return;
-          } else {
-            noVideoOverlay.style.display = "none";
           }
+          else { noVideoOverlay.style.display = "none"; }
 
           //  si backend envoie videoId : charger la bonne vidéo
           if (data.videoId) {
@@ -536,14 +540,13 @@
           setTimeout(() => {
             let targetTime = data.videoTime || 0;
             if (data.isPlaying) {
+              // Calcul du temps écoulé depuis la maj serv selon l'heure d'envoi, l'heure actuel et la vitesse de la vidéo
               const elapsedSinceUpdate = (Date.now() - data.clockTime) / 1000;
               targetTime += (elapsedSinceUpdate * (data.playbackRate || 1));
             }
-
             isSyncing = true;
             player.setPlaybackRate(data.playbackRate || 1);
             player.seekTo(targetTime, true);
-
             if (data.isPlaying) player.playVideo();
             else player.pauseVideo();
 
@@ -553,13 +556,16 @@
       }, 200);
     });
 
+    // Gestion speed
     socket.on("changeSpeed", (speed) => {
       if (!player || !joined) return;
       isSyncing = true;
       player.setPlaybackRate(speed);
-      setTimeout(() => isSyncing = false, 400);
+      // On refait une sync pour être sûr que tt le monde à la mm speed et est au mm moment de la vidéo
+      setTimeout(() => isSyncing = false, 500);
     });
 
+    // Gestion play / pause
     socket.on("play", () => {
       if (!player || !joined) return;
       if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
@@ -576,30 +582,31 @@
       setTimeout(() => isSyncing = false, 400);
     });
 
+    // Synchronisation avec seek
     socket.on("syncAction", (data) => {
       if (!player || !joined) return;
       if (isScrubbing) return;
-
       const now = Date.now();
       const rate = data.playbackRate || player.getPlaybackRate() || 1;
-
+      // Calcul du lag réseau pour compenser
       const timePassedSinceAction = (now - data.clockTime) / 1000;
       const adjustedTargetTime = data.videoTime + (timePassedSinceAction * rate);
 
       const drift = Math.abs(player.getCurrentTime() - adjustedTargetTime);
 
-      if (drift > 0.45) {
+      // Gestion d'erreur de sync lié au délais d'envoi du temps et du délais de sync
+      // Le seuil de 1.5s est plus sûr que 0.5s pour éviter le jittering (vas et viens qui se produisaient avant).
+      if (drift > 1.5) {
         isSyncing = true;
-
-        if (data.playbackRate && Math.abs(player.getPlaybackRate() - data.playbackRate) > 0.01) {
-          player.setPlaybackRate(data.playbackRate);
-        }
-
+        if (data.playbackRate && Math.abs(player.getPlaybackRate() - data.playbackRate) > 0.01) player.setPlaybackRate(data.playbackRate);
         player.seekTo(adjustedTargetTime, true);
+
+        // Bloquer le signal pendant 350ms pour éviter les vas et viens
         setTimeout(() => isSyncing = false, 350);
       }
     });
 
+    // Changement de vidéo
     socket.on("changeVideo", (videoId) => {
       noVideoOverlay.style.display = "none";
       if (!player || !joined) return;
@@ -607,8 +614,9 @@
       player.loadVideoById(videoId);
       setTimeout(() => isSyncing = false, 1000);
       setTimeout(refreshHistory, 400);
-
     });
+
+    /* !!!!!!!!!!!!!!!!! Fin Partie Synchronisation Vidéo !!!!!!!!!!!!!!!!! */
 
     async function refreshHistory() {
       if (!salonId) return;
@@ -671,7 +679,7 @@
 
   </script>
 
-  <!-- ✅ Module Playlist (utilise socket + codeAcces) -->
+  <!-- Module Playlist (utilise socket + codeAcces) -->
   <script type="module">
     import { Playlist } from "/src/frontend/components/playlist/index.js";
 
