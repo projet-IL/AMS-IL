@@ -1,0 +1,71 @@
+import { Router } from "express";
+import crypto from "crypto";
+import { prisma } from "../prisma.js";
+
+const r = Router();
+
+function genCodeAcces() { return crypto.randomBytes(6).toString("hex"); }
+
+r.post("/", async (req, res) => {
+  try {
+    const { nom, pseudo, code_pin, role } = req.body;
+    if (!nom || !pseudo) return res.status(400).json({ error: "nom et pseudo requis" });
+    const code_acces = genCodeAcces();
+    const salon = await prisma.salon.create({ data: { nom, code_acces, code_pin: code_pin || null } });
+    const utilisateur = await prisma.utilisateur.create({ data: { pseudo, role: role || "prof", id_salon: salon.id } });
+    const shareUrl = (process.env.FRONTEND_URL || "http://localhost:4000") + `/video.html?code=${salon.code_acces}`;
+    res.status(201).json({
+      salon: { id: salon.id, nom: salon.nom, code_acces: salon.code_acces, has_pin: !!salon.code_pin },
+      utilisateur: { id: utilisateur.id, pseudo: utilisateur.pseudo, role: utilisateur.role },
+      shareUrl,
+    });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+r.get("/", async (_req, res) => { res.json(await prisma.salon.findMany({ orderBy: { createdAt: "desc" } })); });
+
+r.get("/:codeAcces", async (req, res) => {
+  const salon = await prisma.salon.findUnique({
+    where: { code_acces: req.params.codeAcces },
+    include: {
+      utilisateurs: { select: { id: true, pseudo: true, role: true, createdAt: true } },
+      messages: { orderBy: { date_heure: "asc" } },
+      playlist: { orderBy: { date_ajout: "asc" } },
+      historiques: { orderBy: { date_visionnage: "desc" } },
+    },
+  });
+  if (!salon) return res.status(404).json({ error: "Salon introuvable" });
+  res.json(salon);
+});
+
+r.post("/:codeAcces/join", async (req, res) => {
+  try {
+    const { pseudo, code_pin, role } = req.body;
+    if (!pseudo) return res.status(400).json({ error: "pseudo requis" });
+    const salon = await prisma.salon.findUnique({ where: { code_acces: req.params.codeAcces } });
+    if (!salon) return res.status(404).json({ error: "Salon introuvable" });
+    if (salon.code_pin && salon.code_pin !== code_pin) return res.status(403).json({ error: "PIN invalide" });
+    const utilisateur = await prisma.utilisateur.create({ data: { pseudo, role: role || "etudiant", id_salon: salon.id } });
+    return res.status(201).json({ salon, utilisateur });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+});
+
+r.post("/:codeAcces/leave", async (req, res) => {
+  try {
+    const { utilisateurId } = req.body;
+    if (!utilisateurId) return res.status(400).json({ error: "utilisateurId requis" });
+    await prisma.utilisateur.delete({ where: { id: Number(utilisateurId) } });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+r.delete("/:codeAcces", async (req, res) => {
+  try {
+    const salon = await prisma.salon.findUnique({ where: { code_acces: req.params.codeAcces } });
+    if (!salon) return res.status(404).json({ error: "Salon introuvable" });
+    await prisma.salon.delete({ where: { id: salon.id } });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+export default r;
