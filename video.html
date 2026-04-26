@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: black; overflow: hidden; }
+    #player { width: calc(100% - 400px); height: calc(100% - 44px); }
+
+    #blocker {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: black; color: white; font-family: Arial, sans-serif;
+      padding: 24px; text-align: center; z-index: 99999;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    #sidebar {
+      position: fixed; top: 0; right: 0;
+      width: 400px; height: 100%;
+      background: #0b1220;
+      border-left: 1px solid rgba(255,255,255,0.08);
+      overflow-y: auto; z-index: 9999;
+      display: none; padding: 12px; box-sizing: border-box;
+      font-family: Arial, sans-serif; color: white;
+      scrollbar-width: thin; scrollbar-color: #374151 transparent;
+    }
+
+    .sidebar-section {
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 12px;
+      margin-bottom: 12px; font-size: 13px;
+    }
+    .sidebar-section b { display: block; margin-bottom: 8px; font-size: 14px; }
+
+    /* ═══ NOTES SECTION ═══ */
+    #notesSection { border: 1px solid rgba(245,158,11,0.2); }
+    #notesSection b { color: #f59e0b; }
+
+    #noteContentInput {
+      width: 100%; padding: 8px 10px; border-radius: 8px;
+      border: 1px solid #374151; background: rgba(0,0,0,0.3);
+      color: white; font-size: 13px; resize: none; outline: none;
+      margin-bottom: 6px;
+    }
+    #noteContentInput:focus { border-color: #f59e0b; }
+
+    #hashtagInput {
+      width: 100%; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid #374151; background: rgba(0,0,0,0.3);
+      color: #f59e0b; font-size: 12px; outline: none; margin-bottom: 6px;
+    }
+
+    #addNoteBtn {
+      width: 100%; padding: 8px; background: #f59e0b; color: black;
+      font-weight: 700; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 13px; margin-bottom: 8px;
+    }
+    #addNoteBtn:hover { background: #d97706; }
+
+    #hashtagFilters { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .htag-chip {
+      padding: 2px 8px; border-radius: 10px; font-size: 11px;
+      background: rgba(245,158,11,0.15); color: #f59e0b;
+      cursor: pointer; border: 1px solid transparent;
+    }
+    .htag-chip:hover, .htag-chip.active { border-color: #f59e0b; }
+
+    #notesList { max-height: 300px; overflow-y: auto; }
+    .note-card {
+      background: rgba(0,0,0,0.25); border-radius: 8px; padding: 8px;
+      margin-bottom: 6px; border-left: 3px solid #f59e0b;
+    }
+    .note-ts {
+      display: inline-block; background: rgba(245,158,11,0.2); color: #f59e0b;
+      padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;
+      cursor: pointer; margin-bottom: 4px;
+    }
+    .note-ts:hover { background: rgba(245,158,11,0.4); }
+    .note-text { font-size: 13px; color: #e5e7eb; line-height: 1.4; }
+    .note-tags { margin-top: 4px; }
+    .note-tag { font-size: 10px; color: #60a5fa; background: rgba(59,130,246,0.15); padding: 1px 6px; border-radius: 6px; margin-right: 3px; }
+    .note-del { float: right; background: none; border: none; color: #6b7280; cursor: pointer; font-size: 13px; }
+    .note-del:hover { color: #ef4444; }
+    .note-author { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+    #notesFooter { display: flex; gap: 6px; margin-top: 8px; }
+    .notes-btn {
+      flex: 1; padding: 6px; border-radius: 6px; border: 1px solid #374151;
+      background: #1f2937; color: #d1d5db; font-size: 11px; cursor: pointer;
+    }
+    .notes-btn:hover { background: #374151; }
+
+    /* ═══ CHAT ═══ */
+    #chatMessages { max-height: 220px; overflow: auto; font-size: 12px; margin-bottom: 8px; }
+    #chatMessages .msg-time { color: #6b7280; font-size: 10px; margin-left: 6px; }
+    #chatMessages .msg-pseudo { font-weight: 700; }
+    #chatMessages .msg-pseudo.role-prof { color: #f59e0b; }
+    #chatMessages .msg-pseudo.role-etudiant { color: #60a5fa; }
+
+    /* ═══ HISTORY ═══ */
+    #historyBox a { color: #9ecbff; text-decoration: none; }
+    #historyBox a:hover { text-decoration: underline; }
+
+    /* ═══ BOTTOM BAR ═══ */
+    #bottomBar {
+      position: fixed; bottom: 0; left: 0;
+      width: calc(100% - 400px); height: 44px;
+      background: #111827; border-top: 1px solid #1f2937;
+      display: flex; align-items: center; gap: 8px; padding: 0 12px;
+      z-index: 100;
+    }
+    .bar-btn {
+      padding: 5px 12px; border-radius: 8px; border: 1px solid #374151;
+      background: #1f2937; color: #d1d5db; font-size: 12px; cursor: pointer;
+    }
+    .bar-btn:hover { background: #374151; color: white; }
+    .bar-btn.active { background: #f59e0b; color: black; border-color: #f59e0b; }
+    .bar-btn.prof-only { display: none; }
+    body.is-prof .bar-btn.prof-only { display: inline-flex; }
+
+    /* ═══ WHITEBOARD ═══ */
+    #whiteboardOverlay {
+      position: fixed; top: 0; left: 0;
+      width: calc(100% - 400px); height: calc(100% - 44px);
+      pointer-events: none; z-index: 100;
+      display: block; /* TOUJOURS visible pour que tout le monde voie les traits */
+    }
+    #whiteboardOverlay.drawing { pointer-events: auto; } /* le prof peut dessiner */
+    #whiteboardCanvas { width: 100%; height: 100%; }
+    #whiteboardOverlay.drawing #whiteboardCanvas { cursor: crosshair; }
+
+    #wbControls {
+      position: fixed; top: 10px; left: 10px; z-index: 110;
+      display: none; gap: 6px; align-items: center;
+      background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 10px;
+    }
+    #wbControls.active { display: flex; }
+    .wb-color { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+    .wb-color.active { border-color: white; }
+
+    /* ═══ STYLED MODAL (remplace confirm) ═══ */
+    #wbClearModal {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.6); z-index: 999999;
+    }
+    #wbClearModal.open { display: flex; }
+    .wbm-box {
+      background: #1e293b; border: 1px solid #374151; border-radius: 16px;
+      padding: 24px; color: white; width: 360px; text-align: center;
+    }
+    .wbm-box h3 { margin: 0 0 8px; font-size: 16px; }
+    .wbm-box p { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+    .wbm-btns { display: flex; gap: 10px; justify-content: center; }
+    .wbm-btns button {
+      padding: 10px 24px; border-radius: 10px; border: none; font-weight: 700;
+      font-size: 14px; cursor: pointer;
+    }
+    .wbm-cancel { background: #374151; color: #d1d5db; }
+    .wbm-cancel:hover { background: #4b5563; }
+    .wbm-confirm { background: #ef4444; color: white; }
+    .wbm-confirm:hover { background: #dc2626; }
+
+    /* ═══ NO VIDEO ═══ */
+    #noVideoOverlay {
+      position: fixed; left: 0; top: 0;
+      width: calc(100% - 400px); height: calc(100% - 44px);
+      display: none; align-items: center; justify-content: center;
+      color: white; font-family: Arial; font-size: 18px;
+      background: black; z-index: 50; text-align: center; padding: 20px;
+    }
+
+    /* ═══ JOIN MODAL ═══ */
+    #joinModal {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.6); z-index: 999999; font-family: Arial;
+    }
+    .jm-box {
+      width: 420px; max-width: calc(100% - 24px);
+      background: #0b1220; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px; padding: 20px; color: white;
+    }
+    .jm-box input, .jm-box select {
+      width: 100%; padding: 10px 12px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25); color: white; outline: none;
+      margin-bottom: 10px;
+    }
+    .jm-label { font-size: 12px; opacity: .8; margin-bottom: 6px; }
+    .jm-submit {
+      width: 100%; padding: 10px; border-radius: 12px; border: 0;
+      cursor: pointer; background: #facc15; color: black; font-weight: 700;
+    }
+  </style>
+  <link rel="stylesheet" href="/src/frontend/components/playlist/Playlist.css">
+</head>
+<body>
+  <div id="blocker"></div>
+  <div id="player"></div>
+  <div id="noVideoOverlay">Aucune vidéo en cours — ajoute une vidéo à la playlist.</div>
+
+  <!-- WHITEBOARD OVERLAY -->
+  <div id="whiteboardOverlay"><canvas id="whiteboardCanvas"></canvas></div>
+  <div id="wbControls">
+    <div class="wb-color active" data-color="#f59e0b" style="background:#f59e0b"></div>
+    <div class="wb-color" data-color="#ef4444" style="background:#ef4444"></div>
+    <div class="wb-color" data-color="#10b981" style="background:#10b981"></div>
+    <div class="wb-color" data-color="#3b82f6" style="background:#3b82f6"></div>
+    <div class="wb-color" data-color="#ffffff" style="background:#ffffff"></div>
+    <input type="range" min="2" max="12" value="3" id="wbSize" style="width:50px;">
+    <button class="bar-btn" id="wbUndo" style="font-size:11px;padding:4px 8px;">↩ Annuler</button>
+    <button class="bar-btn" id="wbClearBtn" style="font-size:11px;padding:4px 8px;">🗑 Effacer</button>
+  </div>
+
+  <!-- STYLED CLEAR MODAL -->
+  <div id="wbClearModal">
+    <div class="wbm-box">
+      <h3>🗑 Effacer le tableau</h3>
+      <p>Tout le contenu du tableau blanc sera supprimé pour tous les participants.</p>
+      <div class="wbm-btns">
+        <button class="wbm-cancel" id="wbClearCancel">Annuler</button>
+        <button class="wbm-confirm" id="wbClearConfirm">Effacer tout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottomBar">
+    <button class="bar-btn prof-only" id="toggleWhiteboard">🖊 Tableau blanc</button>
+    <button class="bar-btn" id="btnExportNotes">📥 Exporter notes</button>
+  </div>
+
+  <!-- SIDEBAR (like the original) -->
+  <div id="sidebar">
+    <!-- PARTICIPANTS -->
+    <div class="sidebar-section" id="participantsBox"></div>
+
+    <!-- NOTES (new feature) -->
+    <div class="sidebar-section" id="notesSection">
+      <b>📝 Notes synchronisées</b>
+      <textarea id="noteContentInput" rows="2" placeholder="Prendre une note à ce moment..."></textarea>
+      <input id="hashtagInput" type="text" placeholder="#cause #important #question">
+      <button id="addNoteBtn">📝 Ajouter au timestamp actuel</button>
+      <div id="hashtagFilters"><span class="htag-chip active" data-tag="">Toutes</span></div>
+      <div id="notesList"></div>
+      <div id="notesFooter">
+        <button class="notes-btn" id="btnExportFooter">📥 Exporter</button>
+        <button class="notes-btn prof-only" id="btnViewAll">👁 Toutes les notes</button>
+      </div>
+    </div>
+
+    <!-- PLAYLIST -->
+    <div id="playlistMount"></div>
+
+    <!-- CHAT -->
+    <div class="sidebar-section">
+      <b>💬 Chat</b>
+      <div id="chatMessages"></div>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <input id="chatInput" placeholder="Écrire un message..." style="flex:1; padding:8px; border-radius:8px; border:0; outline:none;">
+        <button id="chatSend" style="padding:8px 10px; border-radius:8px; border:0; cursor:pointer; background:#f59e0b; color:black; font-weight:700;">Envoyer</button>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="sidebar-section" id="historyBox" style="display:none;"></div>
+  </div>
+
+  <!-- JOIN MODAL -->
+  <div id="joinModal">
+    <div class="jm-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <b style="font-size:16px;">Rejoindre le salon</b>
+        <button id="joinClose" style="background:transparent;border:0;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;">✕</button>
+      </div>
+      <div style="font-size:12px;opacity:.7;margin-bottom:12px;">Code : <span id="joinCodeLabel"></span></div>
+      <div class="jm-label">Pseudo</div>
+      <input id="joinPseudo" placeholder="">
+      <div class="jm-label">PIN</div>
+      <input id="joinPin" placeholder="">
+      <div class="jm-label">Rôle</div>
+      <select id="joinRole">
+        <option value="etudiant">Participant</option>
+        <option value="prof">Animateur</option>
+      </select>
+      <div id="joinError" style="font-size:12px;color:#fca5a5;margin-bottom:8px;"></div>
+      <button id="joinSubmit" class="jm-submit">Entrer</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <script>
+    // ═══ GLOBALS ═══
+    const params = new URLSearchParams(window.location.search);
+    var codeAcces = params.get("code");
+    var API_BASE = window.location.origin;
+
+    var STORAGE_KEY = `wt_userId_${codeAcces}`;
+    var ROLE_KEY = `wt_role_${codeAcces}`;
+    var userId = Number(sessionStorage.getItem(STORAGE_KEY)) || null;
+    var userRole = sessionStorage.getItem(ROLE_KEY) || null;
+    var userPseudo = "";
+    var salonId = null;
+    var joined = false;
+
+    var myNotes = [];
+    var allNotes = [];
+    var activeHashtagFilter = "";
+    var allHashtags = new Set();
+
+    // Whiteboard state
+    var wbActive = false, wbDrawing = false, wbColor = "#f59e0b", wbSize = 3;
+    var currentStroke = null, wbStrokes = [];
+
+    // Player sync
+    var player;
+    var pulseInterval = null, isSyncing = false, lastState = null;
+    var lastSyncSentAt = 0, pendingSyncTimeout = null, isScrubbing = false;
+    var drawPermissions = new Set();
+
+    if (!codeAcces) {
+      document.getElementById("blocker").style.display = "flex";
+      document.getElementById("blocker").textContent = "Salon introuvable : il manque ?code=...";
+      throw new Error("Missing code");
+    }
+
+    var socket = io(API_BASE, { transports: ["websocket", "polling"] });
+
+    // ═══ ROLE ═══
+    function applyRole(role) {
+      userRole = role;
+      sessionStorage.setItem(ROLE_KEY, role);
+      if (role === "prof") document.body.classList.add("is-prof");
+      else document.body.classList.remove("is-prof");
+    }
+
+    // ═══ BLOCK / JOIN ═══
+    function blockAccess(msg) {
+      document.getElementById("blocker").style.display = "flex";
+      document.getElementById("blocker").textContent = msg || "Accès refusé.";
+    }
+
+    async function ensureSalonId() {
+      if (salonId) return salonId;
+      try {
+        var resp = await fetch(`${API_BASE}/api/salons/${encodeURIComponent(codeAcces)}`);
+        var salon = await resp.json();
+        if (!resp.ok) return null;
+        salonId = salon?.id || null;
+        return salonId;
+      } catch (e) { return null; }
+    }
+
+    async function ensureUserId() {
+      if (userId) {
+        await ensureSalonId();
+        if (userRole) applyRole(userRole);
+        return userId;
+      }
+      openJoinModal();
+      return new Promise(function(resolve) {
+        async function doJoin() {
+          var joinError = document.getElementById("joinError");
+          joinError.textContent = "";
+          var pseudo = (document.getElementById("joinPseudo").value || "").trim();
+          var code_pin = (document.getElementById("joinPin").value || "").trim();
+          var role = document.getElementById("joinRole").value;
+          if (!pseudo) { joinError.textContent = "Pseudo requis."; return; }
+
+          document.getElementById("joinSubmit").disabled = true;
+          document.getElementById("joinSubmit").textContent = "Connexion...";
+          try {
+            var resp = await fetch(`${API_BASE}/api/salons/${encodeURIComponent(codeAcces)}/join`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pseudo, code_pin, role })
+            });
+            var data = await resp.json();
+            if (!resp.ok) { joinError.textContent = data?.error || "Erreur"; resetJoinBtn(); return; }
+            salonId = data?.salon?.id || data?.utilisateur?.id_salon || null;
+            var newUserId = data?.utilisateur?.id;
+            if (!newUserId) { joinError.textContent = "userId manquant."; resetJoinBtn(); return; }
+            userId = Number(newUserId);
+            userPseudo = pseudo;
+            sessionStorage.setItem(STORAGE_KEY, String(userId));
+            applyRole(data?.utilisateur?.role || role);
+            closeJoinModal();
+            resolve(userId);
+          } catch (e) { joinError.textContent = "Erreur réseau."; resetJoinBtn(); }
+        }
+        function resetJoinBtn() {
+          document.getElementById("joinSubmit").disabled = false;
+          document.getElementById("joinSubmit").textContent = "Entrer";
+        }
+        document.getElementById("joinSubmit").onclick = doJoin;
+        document.getElementById("joinPseudo").onkeydown = function(e) { if (e.key === "Enter") doJoin(); };
+        document.getElementById("joinPin").onkeydown = function(e) { if (e.key === "Enter") doJoin(); };
+      });
+    }
+
+    function openJoinModal() {
+      document.getElementById("joinCodeLabel").textContent = codeAcces;
+      document.getElementById("joinModal").style.display = "flex";
+      setTimeout(function() { document.getElementById("joinPseudo").focus(); }, 50);
+    }
+    function closeJoinModal() { document.getElementById("joinModal").style.display = "none"; }
+
+    document.getElementById("joinClose").addEventListener("click", function() {
+      blockAccess("Accès refusé : pseudo requis.");
+      closeJoinModal();
+    });
+    document.getElementById("joinModal").addEventListener("click", function(e) {
+      if (e.target === document.getElementById("joinModal")) {
+        blockAccess("Accès refusé : pseudo requis.");
+        closeJoinModal();
+      }
+    });
+
+    // ═══ SOCKET EVENTS ═══
+    socket.on("connect", async function() {
+      console.log("socket connected", socket.id);
+      try { await ensureUserId(); socket.emit("joinRoom", { codeAcces, userId }); }
+      catch (e) { console.log("ensureUserId error:", e); }
+    });
+
+    socket.on("errorMessage", function(d) { blockAccess("Accès refusé : " + (d.error || "Erreur")); });
+
+    socket.on("joinedRoom", function(data) {
+      joined = true;
+      if (data.role) applyRole(data.role);
+      if (data.pseudo) userPseudo = data.pseudo;
+      document.getElementById("sidebar").style.display = "block";
+      if (player && typeof player.playVideo === "function") player.pauseVideo();
+      document.getElementById("historyBox").style.display = "block";
+      refreshHistory();
+      refreshChat();
+      loadMyNotes();
+    });
+
+    socket.on("drawPermissionGranted", function(data) {
+    if (data.userId === userId) {
+      console.log("Permission de dessiner accordee");
+      wbActive = true;
+      wbOverlay.classList.add("drawing");
+      wbControlsEl.classList.add("active");
+      
+      var notif = document.createElement("div");
+      notif.textContent = "L'animateur vous a autorise a dessiner sur le tableau";
+      notif.style.cssText = "position:fixed; bottom:70px; right:10px; background:#f59e0b; color:black; padding:8px 12px; border-radius:8px; z-index:10000; font-size:12px;";
+      document.body.appendChild(notif);
+      setTimeout(function() { notif.remove(); }, 3000);
+      }
+      drawPermissions.add(data.userId);
+      socket.emit("getParticipants", { codeAcces });
+    });
+
+    socket.on("drawPermissionRevoked", function(data) {
+      if (data.userId === userId) {
+        console.log("Permission de dessiner revoquee");
+        wbActive = false;
+        wbOverlay.classList.remove("drawing");
+        wbControlsEl.classList.remove("active");
+      
+        var notif = document.createElement("div");
+        notif.textContent = "L'animateur vous a retire le droit de dessiner";
+        notif.style.cssText = "position:fixed; bottom:70px; right:10px; background:#ef4444; color:white; padding:8px 12px; border-radius:8px; z-index:10000; font-size:12px;";
+        document.body.appendChild(notif);
+        setTimeout(function() { notif.remove(); }, 3000);
+      }
+      drawPermissions.delete(data.userId);
+      socket.emit("getParticipants", { codeAcces });
+    });
+
+    socket.on("participantsOnline", function(d) {
+      var online = d.online || [];
+      var container = document.getElementById("participantsBox");
+      if (!container) return;
+      
+      var html = '<b>👥 Connectés (' + online.length + ')</b><br>';
+      online.forEach(function(p) {
+        var isMe = p.userId === userId;
+        var isProf = userRole === "prof";
+        var canDraw = drawPermissions.has(p.userId);
+        
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">';
+        html += '<span>' + p.pseudo + ' ' + (p.role === 'prof' ? '👨‍🏫' : '👤') + (isMe ? ' (vous)' : '') + '</span>';
+        
+        if (isProf && p.role !== 'prof') {
+          html += '<button class="draw-permission-btn" data-userid="' + p.userId + '" data-can="' + canDraw + '">';
+          html += canDraw ? 'Retirer dessin' : 'Autoriser dessin';
+          html += '</button>';
+        }
+        html += '</div>';
+      });
+      container.innerHTML = html;
+      
+      document.querySelectorAll('.draw-permission-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var targetUserId = parseInt(btn.dataset.userid);
+          var alreadyCan = btn.dataset.can === 'true';
+          
+          if (alreadyCan) {
+            socket.emit("revokeDrawPermission", { codeAcces, targetUserId });
+            drawPermissions.delete(targetUserId);
+            btn.dataset.can = 'false';
+            btn.textContent = 'Autoriser dessin';
+          } else {
+            socket.emit("grantDrawPermission", { codeAcces, targetUserId });
+            drawPermissions.add(targetUserId);
+            btn.dataset.can = 'true';
+            btn.textContent = 'Retirer dessin';
+          }
+        });
+      });
+    });
+
+    // ═══ CHAT ═══
+    socket.on("chatMessageCreated", function(msg) { appendChatMessage(msg); });
+
+    function appendChatMessage(msg) {
+      var pseudo = msg?.pseudo || msg?.utilisateur?.pseudo || ('user#' + (msg?.id_utilisateur ?? '?'));
+      var contenu = msg?.contenu ?? '';
+      var role = msg?.role || msg?.utilisateur?.role || '';
+      var time = '';
+      if (msg?.date_heure) {
+        var d = new Date(msg.date_heure);
+        time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }
+
+      var line = document.createElement('div');
+      line.style.marginBottom = '6px';
+      var roleClass = role === 'prof' ? 'role-prof' : 'role-etudiant';
+      line.innerHTML = '<span class="msg-pseudo ' + roleClass + '">' + escapeHtml(pseudo) + '</span>' +
+        ' : ' + escapeHtml(contenu) +
+        (time ? '<span class="msg-time">' + time + '</span>' : '');
+      document.getElementById("chatMessages").appendChild(line);
+      document.getElementById("chatMessages").scrollTop = document.getElementById("chatMessages").scrollHeight;
+    }
+
+    function sendChat() {
+      var contenu = (document.getElementById("chatInput").value || "").trim();
+      if (!contenu) return;
+      socket.emit("chatMessage", { codeAcces, userId, contenu });
+      document.getElementById("chatInput").value = "";
+    }
+    document.getElementById("chatSend").addEventListener("click", sendChat);
+    document.getElementById("chatInput").addEventListener("keydown", function(e) { if (e.key === "Enter") sendChat(); });
+
+    async function refreshChat() {
+      if (!salonId) return;
+      try {
+        var resp = await fetch(API_BASE + '/api/messages?salonId=' + salonId);
+        var msgs = await resp.json();
+        document.getElementById("chatMessages").innerHTML = "";
+        (msgs || []).slice(-50).forEach(appendChatMessage);
+      } catch (e) {}
+    }
+
+    // ═══ HISTORY ═══
+    async function refreshHistory() {
+      if (!salonId) return;
+      try {
+        var resp = await fetch(API_BASE + '/api/historique?salonId=' + salonId);
+        var entries = await resp.json();
+        var top = (entries || []).slice(0, 8);
+        document.getElementById("historyBox").innerHTML =
+          '<b>📜 Historique</b><br>' +
+          (top.length === 0 ? '<i>Aucune vidéo.</i>' :
+            top.map(function(h) {
+              var date = h.date_visionnage ? new Date(h.date_visionnage).toLocaleString('fr-FR') : '';
+              return '• <a href="' + h.url_video + '" target="_blank">' + h.url_video + '</a><br><span style="opacity:.6">' + date + '</span>';
+            }).join('<br>'));
+      } catch (e) {}
+    }
+
+    // ═══ NOTES ═══
+    socket.on("noteAdded", function(d) {
+      if (userRole === "prof" && d.note) { allNotes.push(d.note); renderNotes(); }
+    });
+    socket.on("noteDeleted", function(d) {
+      myNotes = myNotes.filter(function(n) { return n.id !== d.noteId; });
+      allNotes = allNotes.filter(function(n) { return n.id !== d.noteId; });
+      renderNotes();
+    });
+
+    async function loadMyNotes() {
+      if (!userId) return;
+      var videoId = getCurrentVideoId();
+      var url = API_BASE + '/api/notes?userId=' + userId;
+      if (videoId) url += '&videoId=' + videoId;
+      try {
+        var resp = await fetch(url);
+        myNotes = await resp.json();
+        collectHashtags(myNotes);
+        renderNotes();
+      } catch (e) {}
+    }
+
+    async function loadAllNotes() {
+      var videoId = getCurrentVideoId();
+      var url = API_BASE + '/api/notes/salon/' + encodeURIComponent(codeAcces);
+      if (videoId) url += '?videoId=' + videoId;
+      try {
+        var resp = await fetch(url);
+        allNotes = await resp.json();
+        collectHashtags(allNotes);
+        renderNotes(true);
+      } catch (e) {}
+    }
+
+    function collectHashtags(notes) {
+      notes.forEach(function(n) {
+        (n.hashtags || []).forEach(function(h) { allHashtags.add(h.hashtag?.nom || h.nom); });
+      });
+      renderHashtagFilters();
+    }
+
+    function renderHashtagFilters() {
+      var c = document.getElementById("hashtagFilters");
+      c.innerHTML = '<span class="htag-chip ' + (!activeHashtagFilter ? 'active' : '') + '" data-tag="">Toutes</span>';
+      allHashtags.forEach(function(tag) {
+        c.innerHTML += '<span class="htag-chip ' + (activeHashtagFilter === tag ? 'active' : '') + '" data-tag="' + tag + '">#' + tag + '</span>';
+      });
+      c.querySelectorAll(".htag-chip").forEach(function(chip) {
+        chip.addEventListener("click", function() {
+          activeHashtagFilter = chip.dataset.tag;
+          renderHashtagFilters();
+          renderNotes();
+        });
+      });
+    }
+
+    function renderNotes(showAll) {
+      var list = document.getElementById("notesList");
+      var notes = showAll ? allNotes : myNotes;
+      if (activeHashtagFilter) {
+        notes = notes.filter(function(n) {
+          return (n.hashtags || []).some(function(h) { return (h.hashtag?.nom || h.nom) === activeHashtagFilter; });
+        });
+      }
+      if (notes.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:#6b7280;font-size:12px;">Aucune note' + (activeHashtagFilter ? ' avec #' + activeHashtagFilter : '') + '</div>';
+        return;
+      }
+      list.innerHTML = notes.map(function(n) {
+        var mins = Math.floor(n.timestamp_video / 60);
+        var secs = Math.floor(n.timestamp_video % 60).toString().padStart(2, '0');
+        var tags = (n.hashtags || []).map(function(h) { return '<span class="note-tag">#' + (h.hashtag?.nom || h.nom) + '</span>'; }).join('');
+        var author = showAll && n.utilisateur ? '<div class="note-author">par ' + n.utilisateur.pseudo + '</div>' : '';
+        var canDel = n.id_utilisateur === userId || userRole === 'prof';
+        return '<div class="note-card">' +
+          (canDel ? '<button class="note-del" data-nid="' + n.id + '">✕</button>' : '') +
+          '<span class="note-ts" data-ts="' + n.timestamp_video + '">' + mins + ':' + secs + '</span>' +
+          '<div class="note-text">' + escapeHtml(n.contenu) + '</div>' +
+          '<div class="note-tags">' + tags + '</div>' + author + '</div>';
+      }).join('');
+
+      list.querySelectorAll(".note-ts").forEach(function(el) {
+        el.addEventListener("click", function(e) {
+          e.stopPropagation();
+          if (player && typeof player.seekTo === "function") player.seekTo(Number(el.dataset.ts), true);
+        });
+      });
+      list.querySelectorAll(".note-del").forEach(function(btn) {
+        btn.addEventListener("click", async function(e) {
+          e.stopPropagation();
+          var noteId = Number(btn.dataset.nid);
+          try {
+            await fetch(API_BASE + '/api/notes/' + noteId, { method: 'DELETE' });
+            socket.emit("noteDeleted", { codeAcces, noteId });
+            myNotes = myNotes.filter(function(n) { return n.id !== noteId; });
+            allNotes = allNotes.filter(function(n) { return n.id !== noteId; });
+            renderNotes();
+          } catch (e) {}
+        });
+      });
+    }
+
+    function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function getCurrentVideoId() { try { return player?.getVideoData()?.video_id || null; } catch(e) { return null; } }
+
+    document.getElementById("addNoteBtn").addEventListener("click", async function() {
+      var contenu = document.getElementById("noteContentInput").value.trim();
+      if (!contenu) return;
+      var hashtagStr = document.getElementById("hashtagInput").value.trim();
+      var hashtags = hashtagStr.split(/\s+/).filter(function(t) { return t.startsWith('#'); }).map(function(t) { return t.replace(/^#/, ''); });
+      var timestamp_video = 0;
+      try { timestamp_video = player.getCurrentTime(); } catch(e) {}
+      var video_id = getCurrentVideoId();
+      try {
+        var resp = await fetch(API_BASE + '/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contenu, timestamp_video, video_id, id_utilisateur: userId, hashtags })
+        });
+        var note = await resp.json();
+        myNotes.push(note);
+        collectHashtags([note]);
+        renderNotes();
+        socket.emit("noteAdded", { codeAcces, note });
+        document.getElementById("noteContentInput").value = "";
+        document.getElementById("hashtagInput").value = "";
+      } catch (e) {}
+    });
+
+    document.getElementById("noteContentInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) document.getElementById("addNoteBtn").click();
+    });
+
+    function exportNotes() {
+      if (!userId) return;
+      var videoId = getCurrentVideoId();
+      var url = API_BASE + '/api/notes/export?userId=' + userId;
+      if (videoId) url += '&videoId=' + videoId;
+      window.open(url, '_blank');
+    }
+    document.getElementById("btnExportNotes").addEventListener("click", exportNotes);
+    document.getElementById("btnExportFooter").addEventListener("click", exportNotes);
+    if (document.getElementById("btnViewAll")) document.getElementById("btnViewAll").addEventListener("click", function() { loadAllNotes(); });
+
+    // ═══ WHITEBOARD ═══
+    var wbOverlay = document.getElementById("whiteboardOverlay");
+    var wbCanvas = document.getElementById("whiteboardCanvas");
+    var wbCtx = wbCanvas.getContext("2d");
+    var wbControlsEl = document.getElementById("wbControls");
+
+    function resizeCanvas() { wbCanvas.width = wbOverlay.offsetWidth; wbCanvas.height = wbOverlay.offsetHeight; redrawWb(); }
+    function redrawWb() { wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height); wbStrokes.forEach(drawStroke); }
+    function drawStroke(s) {
+      if (!s.points || s.points.length < 2) return;
+      wbCtx.beginPath(); wbCtx.strokeStyle = s.color || '#f59e0b'; wbCtx.lineWidth = s.size || 3;
+      wbCtx.lineCap = 'round'; wbCtx.lineJoin = 'round';
+      wbCtx.moveTo(s.points[0].x * wbCanvas.width, s.points[0].y * wbCanvas.height);
+      for (var i = 1; i < s.points.length; i++) wbCtx.lineTo(s.points[i].x * wbCanvas.width, s.points[i].y * wbCanvas.height);
+      wbCtx.stroke();
+    }
+
+    document.getElementById("toggleWhiteboard").addEventListener("click", function() {
+      wbActive = !wbActive;
+      wbOverlay.classList.toggle("drawing", wbActive); // active/désactive le mode dessin, pas la visibilité
+      wbControlsEl.classList.toggle("active", wbActive);
+      this.classList.toggle("active", wbActive);
+      resizeCanvas(); // redessiner à chaque toggle
+    });
+
+    // Initialiser le canvas dès que la page est prête (pour que les strokes reçus soient visibles)
+    setTimeout(resizeCanvas, 500);
+    window.addEventListener("resize", function() { resizeCanvas(); });
+
+    document.querySelectorAll(".wb-color").forEach(function(el) {
+      el.addEventListener("click", function() {
+        document.querySelectorAll(".wb-color").forEach(function(c) { c.classList.remove("active"); });
+        el.classList.add("active"); wbColor = el.dataset.color;
+      });
+    });
+    document.getElementById("wbSize").addEventListener("input", function(e) { wbSize = Number(e.target.value); });
+
+    wbCanvas.addEventListener("mousedown", function(e) {
+      if (!wbActive) return;
+      wbDrawing = true;
+      var r = wbCanvas.getBoundingClientRect();
+      currentStroke = { color: wbColor, size: wbSize, points: [{ x: (e.clientX - r.left) / wbCanvas.width, y: (e.clientY - r.top) / wbCanvas.height }] };
+    });
+    wbCanvas.addEventListener("mousemove", function(e) {
+      if (!wbDrawing || !currentStroke) return;
+      var r = wbCanvas.getBoundingClientRect();
+      currentStroke.points.push({ x: (e.clientX - r.left) / wbCanvas.width, y: (e.clientY - r.top) / wbCanvas.height });
+      wbCtx.clearRect(0, 0, wbCanvas.width, wbCanvas.height);
+      wbStrokes.forEach(drawStroke); drawStroke(currentStroke);
+    });
+    wbCanvas.addEventListener("mouseup", function() {
+      if (!wbDrawing || !currentStroke) return; wbDrawing = false;
+      wbStrokes.push(currentStroke); socket.emit("whiteboardDraw", { codeAcces, stroke: currentStroke }); currentStroke = null;
+    });
+    wbCanvas.addEventListener("mouseleave", function() {
+      if (wbDrawing && currentStroke) { wbDrawing = false; wbStrokes.push(currentStroke); socket.emit("whiteboardDraw", { codeAcces, stroke: currentStroke }); currentStroke = null; }
+    });
+
+    // Styled clear modal instead of confirm()
+    document.getElementById("wbClearBtn").addEventListener("click", function() { document.getElementById("wbClearModal").classList.add("open"); });
+    document.getElementById("wbClearCancel").addEventListener("click", function() { document.getElementById("wbClearModal").classList.remove("open"); });
+    document.getElementById("wbClearConfirm").addEventListener("click", function() {
+      document.getElementById("wbClearModal").classList.remove("open");
+      socket.emit("whiteboardClear", { codeAcces });
+    });
+    document.getElementById("wbUndo").addEventListener("click", function() { socket.emit("whiteboardUndo", { codeAcces }); });
+
+    socket.on("whiteboardDraw", function(s) { wbStrokes.push(s); drawStroke(s); });
+    socket.on("whiteboardClear", function() { wbStrokes = []; redrawWb(); });
+    socket.on("whiteboardSnapshot", function(s) { wbStrokes = s || []; redrawWb(); });
+
+    // ═══ YOUTUBE PLAYER + SYNC (same as original) ═══
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '100%', width: '100%',
+        videoId: '',
+        playerVars: { autoplay: 0, mute: 1 },
+        events: { onStateChange: onPlayerStateChange, onPlaybackRateChange: onPlaybackRateChange, onReady: function() { try { player.pauseVideo(); } catch(e) {} } }
+      });
+    }
+    window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+    function onPlaybackRateChange(event) { if (!joined || isSyncing) return; socket.emit("changeSpeed", { codeAcces, speed: event.data }); sendSyncDebounced(); }
+    function onPlayerStateChange(event) {
+      if (!joined || isSyncing) return; if (event.data === lastState) return; lastState = event.data;
+      if (event.data === YT.PlayerState.PLAYING) { socket.emit("play", { codeAcces }); sendSyncDebounced(); startPulse(); }
+      else if (event.data === YT.PlayerState.PAUSED) { socket.emit("pause", { codeAcces }); stopPulse(); }
+    }
+
+    function sendSyncDebounced() {
+      if (!player) return; var now = Date.now();
+      var p = { codeAcces, videoTime: player.getCurrentTime(), clockTime: Date.now(), playbackRate: player.getPlaybackRate() };
+      if (now - lastSyncSentAt > 300) { lastSyncSentAt = now; socket.emit("syncAction", p); }
+      else { clearTimeout(pendingSyncTimeout); pendingSyncTimeout = setTimeout(function() { lastSyncSentAt = Date.now(); socket.emit("syncAction", p); }, 300); }
+    }
+    function startPulse() { clearInterval(pulseInterval); pulseInterval = setInterval(function() { if (!player || !joined) return; socket.emit("videoTime", { codeAcces, videoTime: player.getCurrentTime(), clockTime: Date.now(), playbackRate: player.getPlaybackRate() }); }, 5000); }
+    function stopPulse() { clearInterval(pulseInterval); }
+
+    document.addEventListener("keydown", function(e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") isScrubbing = true; });
+    document.addEventListener("keyup", function(e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { isScrubbing = false; if (player && joined) { var p = { codeAcces, videoTime: player.getCurrentTime(), clockTime: Date.now(), playbackRate: player.getPlaybackRate() }; socket.emit("syncAction", p); } } });
+
+    socket.on("initialSync", function(data) {
+      var check = setInterval(function() {
+        if (player && typeof player.seekTo === "function") {
+          clearInterval(check); if (!joined) return;
+          if (!data.videoId) { document.getElementById("noVideoOverlay").style.display = "flex"; try { player.pauseVideo(); } catch(e) {} return; }
+          document.getElementById("noVideoOverlay").style.display = "none";
+          try { var cur = player.getVideoData()?.video_id; if (cur !== data.videoId) { isSyncing = true; player.loadVideoById(data.videoId); } } catch(e) {}
+          setTimeout(function() {
+            var t = data.videoTime || 0;
+            if (data.isPlaying) t += ((Date.now() - data.clockTime) / 1000) * (data.playbackRate || 1);
+            isSyncing = true; player.setPlaybackRate(data.playbackRate || 1); player.seekTo(t, true);
+            if (data.isPlaying) player.playVideo(); else player.pauseVideo();
+            setTimeout(function() { isSyncing = false; }, 1000);
+          }, data.videoId ? 700 : 0);
+        }
+      }, 200);
+    });
+
+    socket.on("changeSpeed", function(s) { if (!player || !joined) return; isSyncing = true; player.setPlaybackRate(s); setTimeout(function() { isSyncing = false; }, 500); });
+    socket.on("play", function() { if (!player || !joined) return; if (player.getPlayerState() !== YT.PlayerState.PLAYING) { isSyncing = true; player.playVideo(); setTimeout(function() { isSyncing = false; }, 400); } });
+    socket.on("pause", function() { if (!player || !joined) return; isSyncing = true; player.pauseVideo(); setTimeout(function() { isSyncing = false; }, 400); });
+    socket.on("syncAction", function(data) {
+      if (!player || !joined || isScrubbing) return;
+      var rate = data.playbackRate || player.getPlaybackRate() || 1;
+      var adj = data.videoTime + ((Date.now() - data.clockTime) / 1000 * rate);
+      if (Math.abs(player.getCurrentTime() - adj) > 1.5) { isSyncing = true; player.seekTo(adj, true); setTimeout(function() { isSyncing = false; }, 350); }
+    });
+    socket.on("changeVideo", function(videoId) {
+      document.getElementById("noVideoOverlay").style.display = "none";
+      if (!player || !joined) return;
+      isSyncing = true; player.loadVideoById(videoId);
+      setTimeout(function() { isSyncing = false; loadMyNotes(); }, 1000);
+      setTimeout(refreshHistory, 400);
+    });
+  </script>
+
+  <!-- PLAYLIST MODULE -->
+  <script type="module">
+    import { Playlist } from "/src/frontend/components/playlist/index.js";
+    var mount = document.getElementById("playlistMount");
+    var pl = new Playlist(codeAcces).init(socket, { codeAcces, userId });
+    pl.render(mount);
+    socket.on("joinedRoom", function() {
+      console.log("[Playlist] ready for salon", codeAcces, "userId=", userId);
+      pl.setUserId(userId);
+    });
+  </script>
+</body>
+</html>
